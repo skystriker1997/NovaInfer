@@ -1,0 +1,15 @@
+{
+  "name" : "sky-infer",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "417119555f155f6044dec7a379cd25466e339873",
+  "dependencies" : [ {
+    "name" : "eigen3",
+    "version>=" : "3.4.0#2"
+  }, {
+    "name" : "glog",
+    "version>=" : "0.6.0#2"
+  }, {
+    "name" : "opencv",
+    "version>=" : "4.8.0"
+  } ]
+}
