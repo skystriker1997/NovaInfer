@@ -6,10 +6,10 @@
     "name" : "eigen3",
     "version>=" : "3.4.0#2"
   }, {
-    "name" : "glog",
-    "version>=" : "0.6.0#2"
+    "name" : "catch2",
+    "version>=" : "3.4.0"
   }, {
-    "name" : "opencv",
-    "version>=" : "4.8.0"
+    "name" : "spdlog",
+    "version>=" : "1.12.0"
   } ]
 }
