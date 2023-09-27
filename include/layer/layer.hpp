@@ -3,21 +3,32 @@
 
 
 #include "type.hpp"
-#include <glog/logging.h>
 #include "tensor/tensor.hpp"
-#include "operand.hpp"
-#include "operator.hpp"
 
 
 namespace sky_infer {
 
+    class Graph;
+
+
     class Layer {
-    public:
+    private:
+        std::string name_;
         LayerType type_;
+        std::vector<std::shared_ptr<Batch<float>>> inputs_;
+        std::shared_ptr<Batch<float>> output_;
+
+
+    public:
 
         Layer(): type_(LayerType::Dummy) {};
 
-        virtual void Forward(Operator* opt) {};
+        std::vector<std::shared_ptr<Batch<float>>> GetInputs() {return inputs_;};
+        std::shared_ptr<Batch<float>> GetOutput() {return output_;};
+        std::string GetName() {return name_;};
+        LayerType GetType() {return type_;};
+
+        virtual void Forward() {};
 
         virtual ~Layer() = default;
 

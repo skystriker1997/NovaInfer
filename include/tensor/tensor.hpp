@@ -5,7 +5,7 @@
 #include <Eigen/Eigen>
 #include <vector>
 #include <memory>
-#include <glog/logging.h>
+#include "inf_util.hpp"
 #include <iostream>
 
 
@@ -17,14 +17,15 @@ namespace sky_infer {
     class Tensor {
     private:
         std::vector<int> shape_;
-        std::vector<Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic>> data_;
+        std::vector<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> data_;
+        Check check_;
 
     public:
         Tensor() = default;
 
         explicit Tensor(const std::vector<int> &shape);
 
-        explicit Tensor(const std::vector<int> &shape, T value);
+        Tensor(const std::vector<int> &shape, T value);
 
         Tensor(const std::vector<int> &shape, std::vector<T> &data, bool column_major);
 
@@ -45,10 +46,10 @@ namespace sky_infer {
 
         ~Tensor() = default;
 
-        Eigen::Ref<const Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> ReadMatrix(int n);
+        Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> ReadMatrix(int n);
         Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> WriteMatrix(int n);
 
-        const std::vector<int> &ReadShape();
+        const std::vector<int>& ReadShape() const;
         std::vector<int> &WriteShape();
 
         Tensor<T> operator+(const Tensor<T> &other);
@@ -57,7 +58,11 @@ namespace sky_infer {
 
         Tensor<T> operator%(const Tensor<T> &other);
 
-        void Padding(const std::vector<int>& pads, T padding_value);
+        T Max();
+        T Min();
+
+        Tensor<T> Padding(const std::vector<int>& pads, T padding_value);
+        void PaddingInpalce(const std::vector<int>& pads, T padding_value);
 
         void Print();
 
@@ -65,13 +70,14 @@ namespace sky_infer {
 
     template<typename T>
     Tensor<T>::Tensor(const std::vector<int> &shape) {
+
         shape_.resize(3);
-        CHECK(!shape.empty() && shape.size() <= 3)
-                        << "failed to construct tensor; number of dimension is " << shape.size();
-        for (int i: shape) {
-            CHECK(i > 0) << "failed to construct tensor; any dimension cannot be less than 1";
-            //  i *= j;
-        }
+
+        check_(!shape.empty() && shape.size() <= 3) << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
+
+        for (int i: shape)
+            check_(i > 0) << "failed to construct tensor; any dimension cannot be less than 1";
+
         if (shape.size() == 1) {
             shape_[0] = 1;
             shape_[1] = shape[0];
@@ -94,10 +100,10 @@ namespace sky_infer {
     template<typename T>
     Tensor<T>::Tensor(const std::vector<int> &shape, T value) {
         shape_.resize(3);
-        CHECK(!shape.empty() && shape.size() <= 3)
-                        << "failed to construct tensor; number of dimension is " << shape.size();
+        check_(!shape.empty() && shape.size() <= 3)
+                        << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
         for (int i: shape) {
-            CHECK(i > 0) << "failed to construct tensor; any dimension cannot be less than 1";
+            check_(i > 0) << "failed to construct tensor; any dimension cannot be less than 1";
             //  i *= j;
         }
         if (shape.size() == 1) {
@@ -121,15 +127,15 @@ namespace sky_infer {
     template<typename T>
     Tensor<T>::Tensor(const std::vector<int> &shape, std::vector<T> &data, bool column_major) {
         shape_.resize(3);
-        CHECK(!shape.empty() && shape.size() <= 3)
-                        << "failed to construct tensor; number of dimension is " << shape.size();
+        check_(!shape.empty() && shape.size() <= 3)
+                        << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
 
         int i = 1;
         for (int j: shape) {
-            CHECK(j > 0) << "failed to construct tensor; any dimension cannot be less than 1";
+            check_(j > 0) << "failed to construct tensor; any dimension cannot be less than 1";
             i *= j;
         }
-        CHECK(i == data.size()) << "failed to construct tensor; size of data does not match with shape";
+        check_(i == data.size()) << "failed to construct tensor; size of tensor does not match with shape";
 
         if (shape.size() == 1) {
             shape_[0] = 1;
@@ -221,7 +227,7 @@ namespace sky_infer {
 
     template<typename T>
     Eigen::Ref<const Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> Tensor<T>::ReadMatrix(int n) {
-        CHECK(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
+        check_(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
         return data_[n];
     };
 
@@ -229,14 +235,14 @@ namespace sky_infer {
 
     template<typename T>
     Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> Tensor<T>::WriteMatrix(int n) {
-        CHECK(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
+        check_(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
         return data_[n];
     };
 
 
 
     template<typename T>
-    const std::vector<int> &Tensor<T>::ReadShape() {
+    const std::vector<int>& Tensor<T>::ReadShape() const {
         return shape_;
     }
 
@@ -275,16 +281,16 @@ namespace sky_infer {
             else if (shape_[0] == other.shape_[0] && shape_[1] == other.shape_[1] && other.shape_[2] == 1)
                 right_broadcast_along_col = true;
             else
-                LOG(FATAL) << "failed to add tensors; mismatching of dimensions";
+                check_(false) << "failed to add tensors; mismatching of dimensions";
         }
 
 
         if (!normal) {
             if (left_broadcast_along_channel || left_broadcast_along_col || left_broadcast_along_row)
-                CHECK(!right_broadcast_along_row && !right_broadcast_along_col && !right_broadcast_along_channel)
+                check_(!right_broadcast_along_row && !right_broadcast_along_col && !right_broadcast_along_channel)
                                 << "failed to add tensors; at most one tensor can broadcast";
             if (right_broadcast_along_row || right_broadcast_along_col || right_broadcast_along_channel)
-                CHECK(!left_broadcast_along_channel && !left_broadcast_along_col && !left_broadcast_along_row)
+                check_(!left_broadcast_along_channel && !left_broadcast_along_col && !left_broadcast_along_row)
                                 << "failed to add tensors; at most one tensor can broadcast";
         }
 
@@ -347,7 +353,7 @@ namespace sky_infer {
 
     template<typename T>
     Tensor<T> Tensor<T>::operator*(const Tensor<T> &other) {
-        CHECK(shape_[2] == other.shape_[1])
+        check_(shape_[2] == other.shape_[1])
                         << "failed to matrix-wisely multiply tensors; left matrix col num not matching with row num of right one";
 
         bool normal = shape_[0] == other.shape_[0];
@@ -359,7 +365,7 @@ namespace sky_infer {
             else if (other.shape_[0] == 1)
                 right_broadcast_along_channel = true;
             else
-                LOG(FATAL) << "failed to matrix-wisely multiply tensors; mismatching channels";
+                check_(false) << "failed to matrix-wisely multiply tensors; mismatching channels";
         }
 
         Tensor<T> output(std::vector<int>{1, shape_[1], other.shape_[2]});
@@ -381,7 +387,7 @@ namespace sky_infer {
 
     template<typename T>
     Tensor<T> Tensor<T>::operator%(const Tensor<T> &other) {
-        CHECK(shape_[1] == other.shape_[1] && shape_[2] == other.shape_[2])
+        check_(shape_[1] == other.shape_[1] && shape_[2] == other.shape_[2])
                         << "failed to coef-wisely multiply tensors; mismatching shapes";
 
         bool normal = shape_[0] == other.shape_[0];
@@ -389,41 +395,79 @@ namespace sky_infer {
         bool left_broadcast_along_channel = shape_[0] != other.shape_[0] && shape_[0] == 1;
         bool right_broadcast_along_channel = shape_[0] != other.shape_[0] && other.shape_[0] == 1;
 
-        CHECK(normal || left_broadcast_along_channel || right_broadcast_along_channel)
+        check_(normal || left_broadcast_along_channel || right_broadcast_along_channel)
                         << "failed to coef-wisely multiply tensors; mismatching shapes";
 
-        int max_channel = shape_[0] > other.shape_[0] ? shape_[0] : other.shape_[0];
+   //     int max_channel = shape_[0] > other.shape_[0] ? shape_[0] : other.shape_[0];
 
-        Tensor<T> output(std::vector<int>{max_channel, shape_[1], shape_[2]});
+        Tensor<T> output(std::vector<int>{1, shape_[1], shape_[2]});
 
         //    input1.shape_[0] == input2.shape_[0] &&
 
         if (normal)
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i].array() * other.data_[i].array();
+                output.data_[0].array() += data_[i].array() * other.data_[i].array();
         else if (left_broadcast_along_channel)
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[0].array() * other.data_[i].array();
+                output.data_[0].array() += data_[0].array() * other.data_[i].array();
         else
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i].array() * other.data_[0].array();
+                output.data_[0].array() += data_[i].array() * other.data_[0].array();
 
         return output;
     }
 
 
+    template<typename T>
+    T Tensor<T>::Min() {
+        T i = data_[0].minCoeff();
+        for(int j=0; j<data_.size(); j++) {
+            if(j==0)
+                continue;
+            int m = data_[j].minCoeff();
+            i = m < i ? m : i;
+        }
+        return i;
+    }
+
 
     template<typename T>
-    void Tensor<T>::Padding(const std::vector<int> &pads, T padding_value) {
-        // up, bottom, left, right
-       // CHECK(!block_mode_) << "failed to padding; at block mode";
-        CHECK(pads.size() == 4) << "failed to padding; size of padding vector is not exactly 4";
+    T Tensor<T>::Max() {
+        T i = data_[0].maxCoeff();
+        for(int j=0; j<data_.size(); j++) {
+            if(j==0)
+                continue;
+            int m = data_[j].maxCoeff();
+            i = m > i ? m : i;
+        }
+        return i;
+    }
+
+
+
+    template<typename T>
+    Tensor<T> Tensor<T>::Padding(const std::vector<int> &pads, T padding_value) {
+        // pads: upper, left, bottom, right
+        check_(pads.size() == 4) << "failed to padding; size of padding vector is not exactly 4";
         for(int i: pads)
-            CHECK(i >= 0) << "failed to padding; elements of padding vector cannot be negative";
-        std::vector<int> shape{shape_[0], shape_[1] + pads[0] + pads[1], shape_[2] + pads[2] + pads[3]};
+            check_(i >= 0) << "failed to padding; elements of padding vector cannot be negative";
+        std::vector<int> shape{shape_[0], shape_[1] + pads[0] + pads[2], shape_[2] + pads[1] + pads[3]};
         Tensor<T> tmp(shape, padding_value);
         for(int i=0; i<shape[0]; i++)
-            tmp.data_[i].block(pads[1], pads[2], shape_[1], shape_[2]) = data_[i];
+            tmp.data_[i].block(pads[0], pads[1], shape_[1], shape_[2]) = data_[i];
+        return tmp;
+    }
+
+
+    template<typename T>
+    void Tensor<T>::PaddingInpalce(const std::vector<int> &pads, T padding_value) {
+        check_(pads.size() == 4) << "failed to padding; size of padding vector is not exactly 4";
+        for(int i: pads)
+            check_(i >= 0) << "failed to padding; elements of padding vector cannot be negative";
+        std::vector<int> shape{shape_[0], shape_[1] + pads[0] + pads[2], shape_[2] + pads[1] + pads[3]};
+        Tensor<T> tmp(shape, padding_value);
+        for(int i=0; i<shape[0]; i++)
+            tmp.data_[i].block(pads[0], pads[1], shape_[1], shape_[2]) = data_[i];
         data_ = std::move(tmp.data_);
         shape_ = std::move(shape);
     }
@@ -434,6 +478,51 @@ namespace sky_infer {
         for(int i=0; i<data_.size(); i++) {
             std::cout << "channel " << i << ": " << std::endl;
             std::cout << data_[i] << std::endl;
+        }
+    }
+
+
+
+    template<typename T>
+    struct Batch {
+    private:
+        Check check_;
+
+    public:
+        std::vector<Tensor<T>> data_;
+        std::vector<int> shape_;
+        std::string name_;
+
+        Batch() = default;
+
+        Batch(const std::string &name, const std::vector<int> &shape);
+
+        ~Batch() = default;
+    };
+
+
+
+    template<typename T>
+    Batch<T>::Batch(const std::string &name, const std::vector<int> &shape) {
+        name_ = name;
+        int n = shape.size();
+        check_(n > 0 && n < 5) << "failed to initialise batch; improper dimension number: " + std::to_string(n);
+        for (int i: shape)
+            check_(i > 0) << "failed to initialise operand; any dimension cannot be less than 1";
+
+        if (n == 4) {
+            auto data = std::vector<Tensor<float>>(shape_[0],
+                                                   Tensor<float>{std::vector<int>{shape_[1], shape_[2], shape_[3]}});
+            data_ = std::move(data);
+            shape_ = shape;
+        } else {
+            data_.emplace_back(shape);
+            if (n == 3)
+                shape_ = {1, shape[0], shape[1], shape[2]};
+            else if (n == 2)
+                shape_ = {1, 1, shape[0], shape[1]};
+            else
+                shape_ = {1, 1, shape[0], 1};
         }
     }
 

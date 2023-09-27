@@ -2,38 +2,49 @@
 #define SKY_INFER_GRAPH
 
 
-#include "layer/layer_factory.hpp"
+#include "layer/layer.hpp"
+#include "layer/concrete/convolution.hpp"
+#include "layer/concrete/expression.hpp"
+#include "layer/concrete/maxpooling.hpp"
+#include "layer/concrete/relu.hpp"
+
+
 #include <queue>
+#include <set>
+#include <map>
+#include "pnnx/ir.h"
 
 
 
 namespace sky_infer {
 
-        class Graph {
-        private:
-            std::string param_path_;
-            std::string bin_path_;
-            LayerFactory layer_factory_;
-            std::map<std::string, Operand> operands_;
-            std::map<std::string, Operator> operators_;
+    class Graph {
+    private:
 
-            std::vector<Operator*> topo_sorted_operators_;
+        std::string param_path_;
+        std::string bin_path_;
+        std::map<std::string, std::shared_ptr<Layer>> layers_;
+        std::map<std::string, std::shared_ptr<Batch<float>>> data_nodes_;
 
-        public:
-            Graph(const std::string& param_path, const std::string& bin_path);
+        std::vector< std::shared_ptr<Layer>> topo_sorted_layers_;
 
-            ~Graph() = default;
+        std::set<std::string> raw_inputs_;
 
-            void IniInputData(const std::string& opt_name, std::vector<Tensor<float>>& data);
+        std::shared_ptr<Layer> CreateLayer(pnnx::Operator* opt);
 
-            void Forward();
+        void TopoSortLayers();
 
-            void TopoSortOpts();
-
-        };
+        Check check_;
 
 
+    public:
+        Graph(const std::string& param_path, const std::string& bin_path);
 
+        ~Graph() = default;
+
+        void Forward();
+
+    };
 }
 
 
