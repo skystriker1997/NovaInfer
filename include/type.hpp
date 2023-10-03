@@ -8,30 +8,30 @@
 namespace sky_infer {
 
 
-    enum OpdDataType {
-        OpdUnknown,
-        OpdFloat,
-    };
+//    enum OpdDataType {
+//        OpdUnknown,
+//        OpdFloat,
+//    };
+//
+//    enum AttrDataType {
+//        AttrUnknown,
+//        AttrFloat,
+//    };
 
-    enum AttrDataType {
-        AttrUnknown,
-        AttrFloat,
-    };
 
-
-    enum ParamDataType {
-        ParamDummy,
-
-        ParamBool,
-
-        ParamInt,
-        ParamFloat,
-        ParamString,
-
-        ParamIntArray,
-        ParamFloatArray,
-        ParamStringArray
-    };
+//    enum ParamDataType {
+//        ParamDummy,
+//
+//        ParamBool,
+//
+//        ParamInt,
+//        ParamFloat,
+//        ParamString,
+//
+//        ParamIntArray,
+//        ParamFloatArray,
+//        ParamStringArray
+//    };
 
 
     enum LayerType {
@@ -41,7 +41,10 @@ namespace sky_infer {
         ReLU,
         Expression,
         Linear,
-        SoftMax
+        SoftMax,
+        MaxPooling,
+        Flatten,
+        Sigmoid
     };
 
 
