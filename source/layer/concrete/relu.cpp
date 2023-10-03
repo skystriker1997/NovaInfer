@@ -2,20 +2,19 @@
 
 namespace sky_infer {
 
-    LayerReLU::LayerReLU(std::shared_ptr<Batch<float>> input, std::shared_ptr<Batch<float>> output) : type_(LayerType::ReLU), input_(input), output_(output) {};
+    LayerReLU::LayerReLU(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output) : type_(LayerType::ReLU), name_(std::move(name)), input_(std::move(input)), output_(std::move(output)) {};
 
 
     void LayerReLU::Forward() {
 
-        check_(input_->shape_==output_->shape_) << "failed to execute relu; input and output have different dimensions";
+        check_(input_->size()==output_->size()) << "failed to execute relu; input batch and output batch have different number of tensors";
 
-        for(int batch=0; batch < input_->shape_[0]; batch++) {
-            for(int channel=0; channel <input_->shape_[1]; channel++)
-                for(int row=0; row<input_->shape_[2]; row++)
-                    for(int col=0; col<input_->shape_[3]; col++) {
-                        float value = input_->data_[batch].ReadMatrix(channel)(row,col);
-                        output_->data_[batch].WriteMatrix(channel)(row,col) = value > 0 ? value:0;
-                    }
+        for(int tensor=0; tensor < input_->size(); tensor++) {
+            Tensor<float>& in = input_->at(tensor);
+            Tensor<float>& out = output_->at(tensor);
+            check_(in.Channels()==out.Channels() && in.Rows()==out.Rows() && in.Cols()==out.Cols()) << "failed to execute relu; input tensor and output tensor have different shapes";
+            for(int channel=0; channel < in.Channels(); channel++)
+                out.WriteMatrix(channel) = in.ReadMatrix(channel).unaryExpr([](float i){return i > 0.f ? i:0.f;});
         }
     }
 }

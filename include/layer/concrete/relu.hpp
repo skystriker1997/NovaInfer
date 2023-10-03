@@ -8,14 +8,18 @@ namespace sky_infer {
     class LayerReLU: public Layer {
     private:
 
+        std::string name_;
         LayerType type_;
-        std::shared_ptr<Batch<float>> input_;
-        std::shared_ptr<Batch<float>> output_;
         Check check_;
+        std::vector<std::string> input_name_;
+        std::vector<std::string> output_name_;
+
+        std::shared_ptr<Batchf> input_;
+        std::shared_ptr<Batchf> output_;
 
     public:
 
-        LayerReLU(std::shared_ptr<Batch<float>> input, std::shared_ptr<Batch<float>> output);
+        LayerReLU(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output);
 
         void Forward() override;
 

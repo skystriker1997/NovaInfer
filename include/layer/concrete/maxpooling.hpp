@@ -9,23 +9,28 @@ namespace sky_infer {
     class LayerMaxpooling: public Layer {
 
     private:
+        std::string name_;
         LayerType type_;
-        std::shared_ptr<Batch<float>> input_;
-        std::shared_ptr<Batch<float>> output_;
+        Check check_;
+        std::vector<std::string> input_name_;
+        std::vector<std::string> output_name_;
+
+        std::shared_ptr<Batchf> input_;
+        std::shared_ptr<Batchf> output_;
+
         std::vector<int> stride_;
         std::vector<int> padding_;
         std::vector<int> kernel_size_;
-        Check check_;
+
 
         friend class Graph;
 
     public:
-        LayerMaxpooling(std::shared_ptr<Batch<float>> input,
-                        std::shared_ptr<Batch<float>> output,
-                        std::vector<int>&& stride,
-                        std::vector<int>&& padding,
-                        std::vector<int>&& kernel_size);
+        LayerMaxpooling(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output, std::vector<int> stride, std::vector<int> padding, std::vector<int> kernel_size);
+
+
         void Forward() override;
+
 
         ~LayerMaxpooling() override = default;
 

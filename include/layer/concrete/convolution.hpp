@@ -7,7 +7,7 @@
 namespace sky_infer {
     class LayerConvolution : public Layer {
 
-    }
+    };
 
 
 }

@@ -10,19 +10,24 @@ namespace sky_infer {
 
     class LayerExpression: public Layer {
     private:
+        std::string name_;
         LayerType type_;
-        std::vector<std::shared_ptr<Batch<float>>> inputs_;
-        std::shared_ptr<Batch<float>> output_;
+        Check check_;
+        std::vector<std::string> input_name_;
+        std::vector<std::string> output_name_;
+
+        std::vector<std::shared_ptr<Batchf>> inputs_;
+        std::shared_ptr<Batchf> output_;
+
         std::string expression_;
         std::vector<std::string> token_vector_;
-        Check check_;
+//        Check check_;
 
         void Parse();
 
-        friend class Graph;
 
     public:
-        LayerExpression(std::vector<std::shared_ptr<Batch<float>>>&& inputs,std::shared_ptr<Batch<float>> output, std::string&& expression);
+        LayerExpression(std::string name, std::vector<std::shared_ptr<Batchf>> inputs,  std::shared_ptr<Batchf> output, std::string expression);
 
         void Forward() override;
 

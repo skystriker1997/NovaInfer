@@ -15,17 +15,23 @@ namespace sky_infer {
     private:
         std::string name_;
         LayerType type_;
-        std::vector<std::shared_ptr<Batch<float>>> inputs_;
-        std::shared_ptr<Batch<float>> output_;
-
+        Check check_;
+        std::vector<std::string> input_name_;
+        std::vector<std::string> output_name_;
 
     public:
 
         Layer(): type_(LayerType::Dummy) {};
 
-        std::vector<std::shared_ptr<Batch<float>>> GetInputs() {return inputs_;};
-        std::shared_ptr<Batch<float>> GetOutput() {return output_;};
+//        std::shared_ptr<Batchf> GetInput() {return input_;};
+//        std::shared_ptr<Batchf> GetOutput() {return output_;};
+
+     //   long foo() {return inputs_.size();};
+
         std::string GetName() {return name_;};
+        const std::vector<std::string>& GetInputName() {return input_name_;};
+        const std::vector<std::string>& GetOutputName() {return output_name_;};
+
         LayerType GetType() {return type_;};
 
         virtual void Forward() {};

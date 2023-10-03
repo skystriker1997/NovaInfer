@@ -4,12 +4,14 @@
 namespace sky_infer {
 
 
-    LayerMaxpooling::LayerMaxpooling(std::shared_ptr<Batch<float>> input,
-                                     std::shared_ptr<Batch<float>> output,
-                                     std::vector<int>&& stride,
-                                     std::vector<int>&& padding,
-                                     std::vector<int>&& kernel_size) :
-                                     input_(std::move(input)), output_(std::move(output)), stride_(stride), padding_(padding), kernel_size_(kernel_size) {};
+    LayerMaxpooling::LayerMaxpooling(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output, std::vector<int> stride, std::vector<int> padding, std::vector<int> kernel_size) :
+                                     type_(LayerType::MaxPooling),
+                                     name_(std::move(name)),
+                                     input_(std::move(input)),
+                                     output_(std::move(output)),
+                                     stride_(std::move(stride)),
+                                     padding_(std::move(padding)),
+                                     kernel_size_(std::move(kernel_size)) {};
 
     void LayerMaxpooling::Forward() {
 
@@ -23,25 +25,29 @@ namespace sky_infer {
         check_(kernel_size_[0]>0 && kernel_size_[1]>0) << "failed to execute; the kernel height and kernel width must be positive integer";
 
 
-        check_(input_->shape_[0] == output_->shape_[0]) << "failed to execute maxpooling; the input and output do not have same number of batch";
-        check_(input_->shape_[1] == output_->shape_[1]) << "failed to execute maxpooling; the input and output do not have same number of channel";
+        check_(input_->size() == output_->size()) << "failed to execute maxpooling; the input and output have different batch sizes";
 
-
-        int output_height = std::floor(((input_->shape_[2] + 2*padding_[0]) - kernel_size_[0]) / stride_[0] + 1);
-        int output_width = std::floor(((input_->shape_[3] + 2*padding_[1]) - kernel_size_[1]) / stride_[1] + 1);
-
-        check_(output_->shape_[2] == output_height) << "failed to execute maxpooling; incorrect row number of output";
-        check_(output_->shape_[3] == output_width) << "failed to execute maxpooling; incorrect col number of output";
-
-        int batch_size = input_->shape_[0];
+        auto batch_size = input_->size();
 
         for(int i=0; i<batch_size; i++) {
-            Tensor<float> tensor = input_->data_[i];
+            Tensor<float>& in = input_->at(i);
+            Tensor<float>& out = output_->at(i);
+            check_(in.Channels() == out.Channels()) << "failed to execute maxpooling; the input tensor and output tensor do not have same batch size";
+
+            int output_height = std::floor(((in.Rows() + 2*padding_[0]) - kernel_size_[0]) / stride_[0] + 1);
+            int output_width = std::floor(((in.Cols() + 2*padding_[1]) - kernel_size_[1]) / stride_[1] + 1);
+
+            check_(out.Rows() == output_height) << "failed to execute maxpooling; incorrect row number of output";
+            check_(out.Cols() == output_width) << "failed to execute maxpooling; incorrect col number of output";
+
+            Tensor<float> tensor = in;
+
             tensor.PaddingInpalce(std::vector<int>{padding_[0], padding_[1], padding_[0], padding_[1]}, tensor.Min());
-            for(int j=0; j<output_->data_[0].ReadShape()[0]; j++) {
+
+            for(int j=0; j<out.Channels(); j++) {
                 for(int k=0; k<output_height; k++) {
                     for(int t=0; t<output_width; t++) {
-                        output_->data_[i].WriteMatrix(j)(k,t) = tensor.ReadMatrix(j).block(k*stride_[0], k*stride_[1], kernel_size_[0], kernel_size_[1]).maxCoeff();
+                        out.WriteMatrix(j)(k,t) = tensor.ReadMatrix(j).block(k*stride_[0], k*stride_[1], kernel_size_[0], kernel_size_[1]).maxCoeff();
                     }
                 }
             }
