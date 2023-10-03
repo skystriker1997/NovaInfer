@@ -10,14 +10,13 @@
 
 
 
-
 namespace sky_infer {
 
     template<typename T>
     class Tensor {
     private:
         std::vector<int> shape_;
-        std::vector<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> data_;
+        std::vector<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data_;
         Check check_;
 
     public:
@@ -27,46 +26,71 @@ namespace sky_infer {
 
         Tensor(const std::vector<int> &shape, T value);
 
-        Tensor(const std::vector<int> &shape, std::vector<T> &data, bool column_major);
+        Tensor(const std::vector<int> &shape, std::vector<T> &data);
 
-        Tensor(const Tensor<T> &other);
+        Tensor(const Tensor<T> &rhs);
 
-        Tensor(Tensor<T> &&other) noexcept;
+        Tensor(Tensor<T> &&rhs) noexcept;
 
-        explicit Tensor(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& data);
-        explicit Tensor(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&& data) noexcept;
+//        explicit Tensor(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& data);
+//        explicit Tensor(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>&& data) noexcept;
 
-        Tensor<T> &operator=(const Tensor<T> &other);
+        Tensor<T> &operator=(const Tensor<T> &rhs);
 
-        Tensor<T> &operator=(Tensor<T> &&other) noexcept;
+        Tensor<T> &operator=(Tensor<T> &&rhs) noexcept;
 
-        Tensor<T> &operator=(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& data);
-        Tensor<T> &operator=(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&& data) noexcept;
+        void Swap(Tensor<T> &rhs) noexcept;
+
+//        Tensor<T> &operator=(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& data);
+//        Tensor<T> &operator=(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>&& data) noexcept;
 
 
         ~Tensor() = default;
 
-        Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> ReadMatrix(int n);
-        Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> WriteMatrix(int n);
 
-        const std::vector<int>& ReadShape() const;
-        std::vector<int> &WriteShape();
+       // [[nodiscard]] const std::vector<int>& ReadShape() const;
 
-        Tensor<T> operator+(const Tensor<T> &other);
+       int Channels();
+       int Rows();
+       int Cols();
 
-        Tensor<T> operator*(const Tensor<T> &other);
+        std::vector<int>& WriteShape();
 
-        Tensor<T> operator%(const Tensor<T> &other);
+        Tensor<T> Reshape(const std::vector<int>& shape);
+        void ReshapeInplace(const std::vector<int>& shape);
 
-        T Max();
-        T Min();
 
         Tensor<T> Padding(const std::vector<int>& pads, T padding_value);
         void PaddingInpalce(const std::vector<int>& pads, T padding_value);
 
+        T Max();
+        T Min();
+
+        Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> ReadMatrix(int n);
+        Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> WriteMatrix(int n);
+
+
+        Tensor<T> operator+(const Tensor<T> &rhs);
+
+        Tensor<T> operator*(const Tensor<T> &rhs);
+
+        Tensor<T> operator%(const Tensor<T> &rhs);
+
+
+//        Tensor<T> Flatten();
+//        void FlattenInplace();
+
         void Print();
 
     };
+
+
+    template<typename T>
+    void Swap(Tensor<T>& lhs, Tensor<T>& rhs) noexcept {
+        lhs.Swap(rhs);
+    }
+
+
 
     template<typename T>
     Tensor<T>::Tensor(const std::vector<int> &shape) {
@@ -80,8 +104,8 @@ namespace sky_infer {
 
         if (shape.size() == 1) {
             shape_[0] = 1;
-            shape_[1] = shape[0];
-            shape_[2] = 1;
+            shape_[1] = 1;
+            shape_[2] = shape[0];
         } else if (shape.size() == 2) {
             shape_[0] = 1;
             shape_[1] = shape[0];
@@ -89,8 +113,8 @@ namespace sky_infer {
         } else {
             shape_ = shape;
         }
-        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> data(shape_[0],
-                                                                           Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>(
+        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data(shape_[0],
+                                                                           Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>(
                                                                                    shape_[1], shape_[2]));
         data_ = std::move(data);
     }
@@ -108,8 +132,8 @@ namespace sky_infer {
         }
         if (shape.size() == 1) {
             shape_[0] = 1;
-            shape_[1] = shape[0];
-            shape_[2] = 1;
+            shape_[1] = 1;
+            shape_[2] = shape[0];
         } else if (shape.size() == 2) {
             shape_[0] = 1;
             shape_[1] = shape[0];
@@ -117,15 +141,15 @@ namespace sky_infer {
         } else {
             shape_ = shape;
         }
-        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> data(shape_[0],
-                                                                           Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Constant(
+        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data(shape_[0],
+                                                                           Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>::Constant(
                                                                                    shape_[1], shape_[2], value));
         data_ = std::move(data);
     }
 
 
     template<typename T>
-    Tensor<T>::Tensor(const std::vector<int> &shape, std::vector<T> &data, bool column_major) {
+    Tensor<T>::Tensor(const std::vector<int> &shape, std::vector<T> &data) {
         shape_.resize(3);
         check_(!shape.empty() && shape.size() <= 3)
                         << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
@@ -139,8 +163,8 @@ namespace sky_infer {
 
         if (shape.size() == 1) {
             shape_[0] = 1;
-            shape_[1] = shape[0];
-            shape_[2] = 1;
+            shape_[1] = 1;
+            shape_[2] = shape[0];
         } else if (shape.size() == 2) {
             shape_[0] = 1;
             shape_[1] = shape[0];
@@ -149,84 +173,89 @@ namespace sky_infer {
             shape_ = shape;
         }
 
-        //  shape_ = shape;
 
         data_.resize(shape_[0]);
         for (int k = 0; k < shape_[0]; k++) {
-            data_[k] = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>(
+            data_[k] = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
                     std::vector<T>(data.begin() + k * shape_[1] * shape_[2],
                                    data.begin() + (k + 1) * shape_[1] * shape_[2]).data(), shape_[1], shape_[2]);
-            if (!column_major)
-                data_[k].transposeInPlace();
         }
+
     }
 
 
     template<typename T>
-    Tensor<T>::Tensor(const Tensor<T> &other) {
-        data_ = other.data_;
-        shape_ = other.shape_;
+    Tensor<T>::Tensor(const Tensor<T> &rhs) {
+        data_ = rhs.data_;
+        shape_ = rhs.shape_;
     }
 
 
     template<typename T>
-    Tensor<T>::Tensor(Tensor<T> &&other) noexcept {
-        shape_ = std::move(other.shape_);
-        data_ = std::move(other.data_);
+    Tensor<T>::Tensor(Tensor<T> &&rhs) noexcept {
+        shape_ = std::move(rhs.shape_);
+        data_ = std::move(rhs.data_);
     }
 
 
 
+//    template<typename T>
+//    Tensor<T>::Tensor(const std::vector<Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> &data) {
+//        data_ = data;
+//        shape_ = std::vector<int>{data.size(), data[0].rows(), data[0].cols()};
+//    }
+//
+//
+//    template<typename T>
+//    Tensor<T>::Tensor(std::vector<Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> &&data) noexcept {
+//        data_ = data;
+//        shape_ = std::vector<int>{data_.size(), data_[0].rows(), data_[0].cols()};
+//    }
+
+
+
     template<typename T>
-    Tensor<T>::Tensor(const std::vector<Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic>> &data) {
-        data_ = data;
-        shape_ = std::vector<int>{data.size(), data[0].row(), data[0].col()};
-    }
-
-
-    template<typename T>
-    Tensor<T>::Tensor(std::vector<Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic>> &&data) noexcept {
-        data_ = data;
-        shape_ = std::vector<int>{data_.size(), data_[0].row(), data_[0].col()};
-    }
-
-
-
-    template<typename T>
-    Tensor<T> &Tensor<T>::operator=(const Tensor<T> &other) {
-        data_ = other.data_;
-        shape_ = other.shape_;
+    Tensor<T> &Tensor<T>::operator=(const Tensor<T> &rhs) {
+        data_ = rhs.data_;
+        shape_ = rhs.shape_;
         return *this;
     };
 
 
     template<typename T>
-    Tensor<T> &Tensor<T>::operator=(Tensor<T> &&other) noexcept {
-        shape_ = std::move(other.shape_);
-        data_ = std::move(other.data_);
+    Tensor<T> &Tensor<T>::operator=(Tensor<T> &&rhs) noexcept {
+        shape_ = std::move(rhs.shape_);
+        data_ = std::move(rhs.data_);
         return *this;
     }
 
 
     template<typename T>
-    Tensor<T> &Tensor<T>::operator=(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& data) {
-        data_ = data;
-        shape_ = std::vector<int>{data.size(), data[0].row(), data[0].col()};
-        return *this;
-    };
+    void Tensor<T>::Swap(Tensor<T> &rhs) noexcept {
+        std::swap(shape_, rhs.shape_);
+        std::swap(data_, rhs.data_);
+    }
+
+
+//    template<typename T>
+//    Tensor<T> &Tensor<T>::operator=(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& data) {
+//        data_ = data;
+//        shape_ = std::vector<int>{data.size(), data[0].rows(), data[0].cols()};
+//        return *this;
+//    };
+
+
+//    template<typename T>
+//    Tensor<T> &Tensor<T>::operator=(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>&& data) noexcept{
+//        data_ = data;
+//        shape_ = std::vector<int>{data_.size(), data_[0].rows(), data_[0].cols()};
+//        return *this;
+//    };
+
 
 
     template<typename T>
-    Tensor<T> &Tensor<T>::operator=(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&& data) noexcept{
-        data_ = data;
-        shape_ = std::vector<int>{data_.size(), data_[0].row(), data_[0].col()};
-        return *this;
-    };
-
-
-
-    template<typename T>
-    Eigen::Ref<const Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> Tensor<T>::ReadMatrix(int n) {
+    Eigen::Ref<const Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Tensor<T>::ReadMatrix(int n) {
         check_(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
         return data_[n];
     };
@@ -234,17 +263,38 @@ namespace sky_infer {
 
 
     template<typename T>
-    Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic>> Tensor<T>::WriteMatrix(int n) {
+    Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Tensor<T>::WriteMatrix(int n) {
         check_(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
         return data_[n];
     };
 
 
 
+
+//    template<typename T>
+//    const std::vector<int>& Tensor<T>::ReadShape() const {
+//        return shape_;
+//    }
+
     template<typename T>
-    const std::vector<int>& Tensor<T>::ReadShape() const {
-        return shape_;
+    int Tensor<T>::Channels() {
+        return shape_[0];
     }
+
+
+
+    template<typename T>
+    int Tensor<T>::Rows() {
+        return shape_[1];
+    }
+
+
+
+    template<typename T>
+    int Tensor<T>::Cols() {
+        return shape_[2];
+    }
+
 
 
     template<typename T>
@@ -253,11 +303,13 @@ namespace sky_infer {
     }
 
 
+
+
     ////////////
 
     template<typename T>
-    Tensor<T> Tensor<T>::operator+(const Tensor<T> &other) {
-        bool normal = shape_[0] == other.shape_[0] && shape_[1] == other.shape_[1] && shape_[2] == other.shape_[2];
+    Tensor<T> Tensor<T>::operator+(const Tensor<T> &rhs) {
+        bool normal = shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2];
 
         bool left_broadcast_along_channel = false;
         bool left_broadcast_along_row = false;
@@ -268,17 +320,17 @@ namespace sky_infer {
         bool right_broadcast_along_col = false;
 
         if (!normal) {
-            if (shape_[0] == 1 && shape_[1] == other.shape_[1] && shape_[2] == other.shape_[2])
+            if (shape_[0] == 1 && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
                 left_broadcast_along_channel = true;
-            else if (other.shape_[0] == 1 && shape_[1] == other.shape_[1] && shape_[2] == other.shape_[2])
+            else if (rhs.shape_[0] == 1 && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
                 right_broadcast_along_channel = true;
-            else if (shape_[0] == other.shape_[0] && shape_[1] == 1 && shape_[2] == other.shape_[2])
+            else if (shape_[0] == rhs.shape_[0] && shape_[1] == 1 && shape_[2] == rhs.shape_[2])
                 left_broadcast_along_row = true;
-            else if (shape_[0] == other.shape_[0] && other.shape_[1] == 1 && shape_[2] == other.shape_[2])
+            else if (shape_[0] == rhs.shape_[0] && rhs.shape_[1] == 1 && shape_[2] == rhs.shape_[2])
                 right_broadcast_along_row = true;
-            else if (shape_[0] == other.shape_[0] && shape_[1] == other.shape_[1] && shape_[2] == 1)
+            else if (shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && shape_[2] == 1)
                 left_broadcast_along_col = true;
-            else if (shape_[0] == other.shape_[0] && shape_[1] == other.shape_[1] && other.shape_[2] == 1)
+            else if (shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && rhs.shape_[2] == 1)
                 right_broadcast_along_col = true;
             else
                 check_(false) << "failed to add tensors; mismatching of dimensions";
@@ -294,111 +346,113 @@ namespace sky_infer {
                                 << "failed to add tensors; at most one tensor can broadcast";
         }
 
-        int max_channel = shape_[0] > other.shape_[0] ? shape_[0] : other.shape_[0];
-        int max_row = shape_[1] > other.shape_[1] ? shape_[1] : other.shape_[1];
-        int max_col = shape_[2] > other.shape_[2] ? shape_[2] : other.shape_[2];
+        int max_channel = shape_[0] > rhs.shape_[0] ? shape_[0] : rhs.shape_[0];
+        int max_row = shape_[1] > rhs.shape_[1] ? shape_[1] : rhs.shape_[1];
+        int max_col = shape_[2] > rhs.shape_[2] ? shape_[2] : rhs.shape_[2];
 
         Tensor<T> output(std::vector<int>{max_channel, max_row, max_col});
 
 
         if (normal) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i] + other.data_[i];
+                output.data_[i] = data_[i] + rhs.data_[i];
         } else if (left_broadcast_along_row && left_broadcast_along_col && left_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[0](0, 0) + other.data_[i].array();
+                output.data_[i] = data_[0](0, 0) + rhs.data_[i].array();
         } else if (left_broadcast_along_row && left_broadcast_along_col && !left_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i](0, 0) + other.data_[i].array();
+                output.data_[i] = data_[i](0, 0) + rhs.data_[i].array();
         } else if (left_broadcast_along_row && !left_broadcast_along_col && left_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = other.data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[0]).transpose();
+                output.data_[i] = rhs.data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[0]).transpose();
         } else if (!left_broadcast_along_row && left_broadcast_along_col && left_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = other.data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[0]);
+                output.data_[i] = rhs.data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[0]);
         } else if (left_broadcast_along_row && !left_broadcast_along_col && !left_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = other.data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[i]).transpose();
+                output.data_[i] = rhs.data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[i]).transpose();
         } else if (!left_broadcast_along_row && left_broadcast_along_col && !left_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = other.data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[i]);
+                output.data_[i] = rhs.data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[i]);
         } else if (!left_broadcast_along_row && !left_broadcast_along_col && left_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[0] + other.data_[i];
+                output.data_[i] = data_[0] + rhs.data_[i];
         } else if (right_broadcast_along_row && right_broadcast_along_col && right_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = other.data_[0](0, 0) + data_[i].array();
+                output.data_[i] = rhs.data_[0](0, 0) + data_[i].array();
         } else if (right_broadcast_along_row && right_broadcast_along_col && !right_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = other.data_[i](0, 0) + data_[i].array();
+                output.data_[i] = rhs.data_[i](0, 0) + data_[i].array();
         } else if (right_broadcast_along_row && !right_broadcast_along_col && right_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(other.data_[0]).transpose();
+                output.data_[i] = data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[0]).transpose();
         } else if (!right_broadcast_along_row && right_broadcast_along_col && right_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(other.data_[0]);
+                output.data_[i] = data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[0]);
         } else if (right_broadcast_along_row && !right_broadcast_along_col && !right_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(other.data_[i]).transpose();
+                output.data_[i] = data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[i]).transpose();
         } else if (!right_broadcast_along_row && right_broadcast_along_col && !right_broadcast_along_channel) {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(other.data_[i]);
+                output.data_[i] = data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[i]);
         } else {
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[i] = other.data_[0] + data_[i];
+                output.data_[i] = rhs.data_[0] + data_[i];
         }
         return output;
     }
 
 
     template<typename T>
-    Tensor<T> Tensor<T>::operator*(const Tensor<T> &other) {
-        check_(shape_[2] == other.shape_[1])
+    Tensor<T> Tensor<T>::operator*(const Tensor<T> &rhs) {
+        check_(shape_[2] == rhs.shape_[1])
                         << "failed to matrix-wisely multiply tensors; left matrix col num not matching with row num of right one";
 
-        bool normal = shape_[0] == other.shape_[0];
+        bool normal = shape_[0] == rhs.shape_[0];
         bool left_broadcast_along_channel = false;
         bool right_broadcast_along_channel = false;
         if (!normal) {
             if (shape_[0] == 1)
                 left_broadcast_along_channel = true;
-            else if (other.shape_[0] == 1)
+            else if (rhs.shape_[0] == 1)
                 right_broadcast_along_channel = true;
             else
                 check_(false) << "failed to matrix-wisely multiply tensors; mismatching channels";
         }
 
-        Tensor<T> output(std::vector<int>{1, shape_[1], other.shape_[2]});
+        int output_channels = shape_[0]>rhs.shape_[0]?shape_[0]:rhs.shape_[0];
+
+        Tensor<T> output(std::vector<int>{output_channels, shape_[1], rhs.shape_[2]});
 
         output.data_[0].setZero();
         if (normal) {
-            for (int i = 0; i < shape_[0]; i++)
-                output.data_[0] += data_[i] * other.data_[i];
+            for (int i = 0; i < output_channels; i++)
+                output.data_[i] = data_[i] * rhs.data_[i];
         } else if (left_broadcast_along_channel) {
-            for (int i = 0; i < shape_[0]; i++)
-                output.data_[0] += data_[0] * other.data_[i];
+            for (int i = 0; i < output_channels; i++)
+                output.data_[i] = data_[0] * rhs.data_[i];
         } else {
-            for (int i = 0; i < shape_[0]; i++)
-                output.data_[0] += data_[i] * other.data_[0];
+            for (int i = 0; i < output_channels; i++)
+                output.data_[i] = data_[i] * rhs.data_[0];
         }
         return output;
     }
 
 
     template<typename T>
-    Tensor<T> Tensor<T>::operator%(const Tensor<T> &other) {
-        check_(shape_[1] == other.shape_[1] && shape_[2] == other.shape_[2])
+    Tensor<T> Tensor<T>::operator%(const Tensor<T> &rhs) {
+        check_(shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
                         << "failed to coef-wisely multiply tensors; mismatching shapes";
 
-        bool normal = shape_[0] == other.shape_[0];
+        bool normal = shape_[0] == rhs.shape_[0];
 
-        bool left_broadcast_along_channel = shape_[0] != other.shape_[0] && shape_[0] == 1;
-        bool right_broadcast_along_channel = shape_[0] != other.shape_[0] && other.shape_[0] == 1;
+        bool left_broadcast_along_channel = shape_[0] != rhs.shape_[0] && shape_[0] == 1;
+        bool right_broadcast_along_channel = shape_[0] != rhs.shape_[0] && rhs.shape_[0] == 1;
 
         check_(normal || left_broadcast_along_channel || right_broadcast_along_channel)
                         << "failed to coef-wisely multiply tensors; mismatching shapes";
 
-   //     int max_channel = shape_[0] > other.shape_[0] ? shape_[0] : other.shape_[0];
+   //     int max_channel = shape_[0] > rhs.shape_[0] ? shape_[0] : rhs.shape_[0];
 
         Tensor<T> output(std::vector<int>{1, shape_[1], shape_[2]});
 
@@ -406,13 +460,13 @@ namespace sky_infer {
 
         if (normal)
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[0].array() += data_[i].array() * other.data_[i].array();
+                output.data_[0].array() += data_[i].array() * rhs.data_[i].array();
         else if (left_broadcast_along_channel)
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[0].array() += data_[0].array() * other.data_[i].array();
+                output.data_[0].array() += data_[0].array() * rhs.data_[i].array();
         else
             for (int i = 0; i < output.shape_[0]; i++)
-                output.data_[0].array() += data_[i].array() * other.data_[0].array();
+                output.data_[0].array() += data_[i].array() * rhs.data_[0].array();
 
         return output;
     }
@@ -473,6 +527,89 @@ namespace sky_infer {
     }
 
 
+
+
+    template<typename T>
+    void Tensor<T>::ReshapeInplace(const std::vector<int> &shape) {
+        check_(!shape.empty() && shape.size()<=3) << "failed to reshape; improper size of shape argument";
+
+        std::vector<int> shape_to;
+        if(shape.size()==1)
+            shape_to = {1, 1, shape[0]};
+        else if(shape.size()==2)
+            shape_to = {1, shape[0], shape[1]};
+        else
+            shape_to = shape;
+
+        check_(shape_to[0]>0 && shape_to[1]>0 && shape_to[2]>0) << "failed to reshape; any dimension cannot be less than 1";
+        check_(shape_to[0]*shape_to[1]*shape_to[2] == shape_[0]*shape_[1]*shape_[2]) << "failed to reshape; mismatching with number of elements";
+
+
+        if(shape_to[0] != shape_[0]) {
+           // int i =;
+            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> flat(1,  shape_[0] * shape_[1] * shape_[2]);
+            for (int i = 0; i < shape_[0]; i++) {
+                flat.block(0, shape_[1] * shape_[2] * i, 1, shape_[1] * shape_[2]) = data_[i].template reshaped<Eigen::RowMajor>(1, shape_[1] * shape_[2]);
+            }
+            std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> tmp_data(shape_to[0]);
+            for (int j = 0; j < shape_to[0]; j++) {
+                tmp_data[j] = flat.block(0, shape_to[1] * shape_to[2] * j, 1, shape_to[1] * shape_to[2]).template reshaped<Eigen::RowMajor>(
+                        shape_to[1], shape_to[2]);
+            }
+            data_ = std::move(tmp_data);
+        } else {
+            for(auto& mtx: data_) {
+                mtx.resize(shape_to[1], shape_to[2]);
+            }
+        }
+
+        shape_ = std::move(shape_to);
+    }
+
+
+    template<typename T>
+    Tensor<T> Tensor<T>::Reshape(const std::vector<int> &shape) {
+        check_(!shape.empty() && shape.size()<=3) << "failed to reshape; improper size of shape argument";
+
+        std::vector<int> shape_to;
+        if(shape.size()==1)
+            shape_to = {1, 1, shape[0]};
+        else if(shape.size()==2)
+            shape_to = {1, shape[0], shape[1]};
+        else
+            shape_to = shape;
+
+        check_(shape_to[0]>0 && shape_to[1]>0 && shape_to[2]>0) << "failed to reshape; any dimension cannot be less than 1";
+        check_(shape_to[0]*shape_to[1]*shape_to[2] == shape_[0]*shape_[1]*shape_[2]) << "failed to reshape; mismatching with number of elements";
+
+        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> tmp_data(shape_to[0]);
+
+        if(shape_to[0] != shape_[0]) {
+            // int i =;
+            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> flat(1,  shape_[0] * shape_[1] * shape_[2]);
+            for (int i = 0; i < shape_[0]; i++) {
+                flat.block(0, shape_[1] * shape_[2] * i, 1, shape_[1] * shape_[2]) = data_[i].template reshaped<Eigen::RowMajor>(1, shape_[1] * shape_[2]);
+            }
+            for (int j = 0; j < shape_to[0]; j++) {
+                tmp_data[j] = flat.block(0, shape_to[1] * shape_to[2] * j, 1, shape_to[1] * shape_to[2]).template reshaped<Eigen::RowMajor>(
+                        shape_to[1], shape_to[2]);
+            }
+        } else {
+            for (int k = 0; k < shape_to[0]; k++) {
+                tmp_data[k] = data_[k].template reshaped<Eigen::RowMajor>(shape_to[1], shape_to[2]);
+            }
+        }
+
+        Tensor<T> output;
+        output.data_ = std::move(tmp_data);
+        output.shape_ = std::move(shape_to);
+
+        return output;
+    }
+
+
+
+
     template<typename T>
     void Tensor<T>::Print() {
         for(int i=0; i<data_.size(); i++) {
@@ -483,48 +620,52 @@ namespace sky_infer {
 
 
 
-    template<typename T>
-    struct Batch {
-    private:
-        Check check_;
-
-    public:
-        std::vector<Tensor<T>> data_;
-        std::vector<int> shape_;
-        std::string name_;
-
-        Batch() = default;
-
-        Batch(const std::string &name, const std::vector<int> &shape);
-
-        ~Batch() = default;
-    };
+    using Batchf = std::vector<Tensor<float>>;
 
 
 
-    template<typename T>
-    Batch<T>::Batch(const std::string &name, const std::vector<int> &shape) {
-        name_ = name;
-        int n = shape.size();
-        check_(n > 0 && n < 5) << "failed to initialise batch; improper dimension number: " + std::to_string(n);
-        for (int i: shape)
-            check_(i > 0) << "failed to initialise operand; any dimension cannot be less than 1";
-
-        if (n == 4) {
-            auto data = std::vector<Tensor<float>>(shape_[0],
-                                                   Tensor<float>{std::vector<int>{shape_[1], shape_[2], shape_[3]}});
-            data_ = std::move(data);
-            shape_ = shape;
-        } else {
-            data_.emplace_back(shape);
-            if (n == 3)
-                shape_ = {1, shape[0], shape[1], shape[2]};
-            else if (n == 2)
-                shape_ = {1, 1, shape[0], shape[1]};
-            else
-                shape_ = {1, 1, shape[0], 1};
-        }
-    }
+//    template<typename T>
+//    struct Batch {
+//    private:
+//        Check check_;
+//
+//    public:
+//        std::vector<Tensor<T>> data_;
+//        std::vector<int> shape_;  //
+//        std::string name_;
+//
+//        Batch() = default;
+//
+//        Batch(const std::string &name, const std::vector<int> &shape);
+//
+//        ~Batch() = default;
+//    };
+//
+//
+//
+//    template<typename T>
+//    Batch<T>::Batch(const std::string &name, const std::vector<int> &shape) {
+//        name_ = name;
+//        int n = shape.size();
+//        check_(n > 0 && n < 5) << "failed to initialise batch; improper dimension number: " + std::to_string(n);
+//        for (int i: shape)
+//            check_(i > 0) << "failed to initialise operand; any dimension cannot be less than 1";
+//
+//        if (n == 4) {
+//            auto data = std::vector<Tensor<float>>(shape_[0],
+//                                                   Tensor<float>{std::vector<int>{shape_[1], shape_[2], shape_[3]}});
+//            data_ = std::move(data);
+//            shape_ = shape;
+//        } else {
+//            data_.emplace_back(shape);
+//            if (n == 3)
+//                shape_ = {1, shape[0], shape[1], shape[2]};
+//            else if (n == 2)
+//                shape_ = {1, 1, shape[0], shape[1]};
+//            else
+//                shape_ = {1, 1, 1, shape[0]};
+//        }
+//    }
 
 
 }
