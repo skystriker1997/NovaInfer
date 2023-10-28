@@ -18,15 +18,24 @@ namespace sky_infer {
         std::shared_ptr<Batchf> input_;
         std::shared_ptr<Batchf> output_;
 
-        std::vector<int> stride_;
-        std::vector<int> padding_;
-        std::vector<int> kernel_size_;
+        int stride_h_;
+        int stride_w_;
+        int padding_h_;
+        int padding_w_;
+        int kernel_h_;
+        int kernel_w_;
 
-
-        friend class Graph;
 
     public:
-        LayerMaxpooling(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output, std::vector<int> stride, std::vector<int> padding, std::vector<int> kernel_size);
+        LayerMaxpooling(std::string name,
+                        std::vector<std::string> input_name, std::vector<std::string> output_name,
+                        int stride_h, int stride_w,
+                        int padding_h, int padding_w,
+                        int kernel_h, int kernel_w);
+
+        void AssignInput(std::shared_ptr<Batchf> input) override {input_ = input;};
+
+        void AssignOutput(std::shared_ptr<Batchf> output) override {output_ = output;};
 
 
         void Forward() override;
@@ -35,6 +44,9 @@ namespace sky_infer {
         ~LayerMaxpooling() override = default;
 
     };
+
+
+    std::shared_ptr<LayerMaxpooling> MakeLayerMaxpooling(pnnx::Operator *opt);
 }
 
 

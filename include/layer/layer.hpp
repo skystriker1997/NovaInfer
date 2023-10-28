@@ -4,6 +4,8 @@
 
 #include "type.hpp"
 #include "tensor/tensor.hpp"
+#include <cmath>
+#include "pnnx/ir.h"
 
 
 namespace sky_infer {
@@ -16,23 +18,22 @@ namespace sky_infer {
         std::string name_;
         LayerType type_;
         Check check_;
-        std::vector<std::string> input_name_;
-        std::vector<std::string> output_name_;
+        std::vector<std::string> input_names_;
+        std::vector<std::string> output_names_;
 
     public:
 
         Layer(): type_(LayerType::Dummy) {};
 
-//        std::shared_ptr<Batchf> GetInput() {return input_;};
-//        std::shared_ptr<Batchf> GetOutput() {return output_;};
-
-     //   long foo() {return inputs_.size();};
-
         std::string GetName() {return name_;};
-        const std::vector<std::string>& GetInputName() {return input_name_;};
-        const std::vector<std::string>& GetOutputName() {return output_name_;};
+        const std::vector<std::string> &GetInputName() {return input_names_;};
+        const std::vector<std::string> &GetOutputName() {return output_names_;};
 
         LayerType GetType() {return type_;};
+
+        virtual void AssignInput(std::shared_ptr<Batchf> input) {};
+
+        virtual void AssignOutput(std::shared_ptr<Batchf> output) {};
 
         virtual void Forward() {};
 

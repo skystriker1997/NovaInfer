@@ -4,44 +4,49 @@
 
 namespace sky_infer {
 
-    LayerExpression::LayerExpression(std::string name, std::vector<std::shared_ptr<Batchf>> inputs,  std::shared_ptr<Batchf> output, std::string expression): type_(LayerType::Expression), name_(std::move(name)), inputs_(std::move(inputs)), output_(std::move(output)), expression_(std::move(expression)) {
+    LayerExpression::LayerExpression(std::string name,
+                                     std::vector<std::string> input_name, std::vector<std::string> output_name,
+                                     std::string expression):
+                                     type_(LayerType::Expression),
+                                     name_(std::move(name)),
+                                     input_names_(std::move(input_name)), output_name_(std::move(output_name)),
+                                     expression_(std::move(expression))
+    {
         Parse();
     }
 
-    void LayerExpression::Forward() {
 
-      //  check_(outputs_.size()==1) << "failed to execute expression; only support one output";
+
+    void LayerExpression::Forward() {
 
         int n = token_vector_.size();
 
         std::vector<Batchf> tmp_batches(n);
         std::vector<std::shared_ptr<Batchf>> batches(n);
 
-
-        for (int i = n - 1; i > 0; i--) {
-            if (token_vector_[i] != "add" && token_vector_[i] != "mul") {
+        for (int op = n - 1; op > 0; op--) {
+            if (token_vector_[op] != "add" && token_vector_[op] != "mul") {
                 int input_index;
                 try {
-                    input_index = std::stoi(token_vector_[i]);  // Convert string to int
-                    //    std::cout << "Converted value: " << intValue << std::endl;
+                    input_index = std::stoi(token_vector_[op]);  // Convert string to int
                 } catch (const std::invalid_argument &e) {
                     check_(false) << "failed to execute expression; invalid input index: " + std::string(e.what());
                 } catch (const std::out_of_range &e) {
                     check_(false) << "failed to execute expression; input index out of int range: " + std::string(e.what());
                 }
                 check_(input_index >= 0 && input_index < inputs_.size()) << "failed to execute expression; input index out of vector range: " + std::to_string(input_index);
-                batches[i] = inputs_[input_index];
+                batches[op] = inputs_[input_index];
             }
         }
 
         batches[0] = output_;
 
-        for(int i=n-1; i>=0; i--) {
+        for (int op=n-1; op>=0; op--) {
 
-            if(batches[i])
+            if(batches[op])
                 continue;
 
-            int input1_index = i+1;
+            int input1_index = op+1;
             while(!batches[input1_index] && tmp_batches[input1_index].empty())
                 input1_index++;
             int input2_index = input1_index+1;
@@ -51,40 +56,38 @@ namespace sky_infer {
             bool input1_tmp = !batches[input1_index];
             bool input2_tmp = !batches[input2_index];
 
-            Batchf & input1 = input1_tmp ? tmp_batches[input1_index] : *batches[input1_index];
-            Batchf & input2 = input2_tmp ? tmp_batches[input2_index] : *batches[input2_index];
-
+            Batchf &input1 = input1_tmp ? tmp_batches[input1_index] : *batches[input1_index];
+            Batchf &input2 = input2_tmp ? tmp_batches[input2_index] : *batches[input2_index];
 
             check_(input1.size() == input2.size()) << "failed to execute expression; illegal add or mul: mismatching batch sizes";
 
-            if(i) {
-                tmp_batches[i].resize(input1.size());
-                if(token_vector_[i] == "add")
-                    for(int j=0; j<input1.size(); j++) {
-                        check_(input1[j].Channels()==input2[j].Channels() && input1[j].Rows()==input2[j].Rows() && input1[j].Cols()==input2[j].Cols()) << "failed to execute expression; tensors should have same shape for addition";
-                        tmp_batches[i][j] = input1[j] + input2[j];
+            if(op) {
+                tmp_batches[op].resize(input1.size());
+                if(token_vector_[op] == "add")
+                    for(int t=0; t<input1.size(); t++) {
+                        check_(input1[t].Channels()==input2[t].Channels() && input1[t].Rows()==input2[t].Rows() && input1[t].Cols()==input2[t].Cols()) << "failed to execute expression; tensors should have same shape for addition";
+                        tmp_batches[op][t] = input1[t] + input2[t];
                     }
 
                 else
-                    for(int j=0; j<input1.size(); j++) {
-                        check_(input1[j].Channels()==input2[j].Channels() && input1[j].Rows()==input2[j].Rows() && input1[j].Cols()==input2[j].Cols()) << "failed to execute expression; tensors should have same shape for coefficient-wise multiplication";
-                        tmp_batches[i][j] = input1[j] % input2[j];
+                    for(int t=0; t<input1.size(); t++) {
+                        check_(input1[t].Channels()==input2[t].Channels() && input1[t].Rows()==input2[t].Rows() && input1[t].Cols()==input2[t].Cols()) << "failed to execute expression; tensors should have same shape for coefficient-wise multiplication";
+                        tmp_batches[op][t] = input1[t] % input2[t];
                     }
             } else {
-                if(token_vector_[i] == "add")
-                    for(int j=0; j<input1.size(); j++) {
-                        check_(input1[j].Channels()==input2[j].Channels() && input1[j].Rows()==input2[j].Rows() && input1[j].Cols()==input2[j].Cols()) << "failed to execute expression; tensors should have same shape for addition";
-                        check_(input1[j].Channels()==batches[0]->at(j).Channels() && input1[j].Rows()==batches[0]->at(j).Rows() && input1[j].Cols()==batches[0]->at(j).Cols()) << "failed to execute expression; tensors should have same shape for addition";
-                        batches[0]->at(j) = input1[j] + input2[j];
+                if(token_vector_[op] == "add")
+                    for(int t=0; t<input1.size(); t++) {
+                        check_(input1[t].Channels()==input2[t].Channels() && input1[t].Rows()==input2[t].Rows() && input1[t].Cols()==input2[t].Cols()) << "failed to execute expression; tensors should have same shape for addition";
+                        check_(input1[t].Channels()==batches[0]->at(t).Channels() && input1[t].Rows()==batches[0]->at(t).Rows() && input1[t].Cols()==batches[0]->at(t).Cols()) << "failed to execute expression; tensors should have same shape for addition";
+                        batches[0]->at(t) = input1[t] + input2[t];
                     }
 
                 else
-                    for(int j=0; j<input1.size(); j++) {
-                        check_(input1[j].Channels()==input2[j].Channels() && input1[j].Rows()==input2[j].Rows() && input1[j].Cols()==input2[j].Cols()) << "failed to execute expression; tensors should have same shape for coefficient-wise multiplication";
-                        check_(input1[j].Channels()==batches[0]->at(j).Channels() && input1[j].Rows()==batches[0]->at(j).Rows() && input1[j].Cols()==batches[0]->at(j).Cols()) << "failed to execute expression; tensors should have same shape for coefficient-wise multiplication";
-                        batches[0]->at(j) = input1[j] % input2[j];
+                    for(int t=0; t<input1.size(); t++) {
+                        check_(input1[t].Channels()==input2[t].Channels() && input1[t].Rows()==input2[t].Rows() && input1[t].Cols()==input2[t].Cols()) << "failed to execute expression; tensors should have same shape for coefficient-wise multiplication";
+                        check_(input1[t].Channels()==batches[0]->at(t).Channels() && input1[t].Rows()==batches[0]->at(t).Rows() && input1[t].Cols()==batches[0]->at(t).Cols()) << "failed to execute expression; tensors should have same shape for coefficient-wise multiplication";
+                        batches[0]->at(t) = input1[t] % input2[t];
                     }
-
             }
 
             if(input1_tmp)
@@ -98,7 +101,6 @@ namespace sky_infer {
                 batches[input2_index].reset();
 
         }
-
     }
 
 
@@ -137,11 +139,19 @@ namespace sky_infer {
                            + std::string{lptr, lptr + 1};
             }
         }
-
     }
 
+    std::shared_ptr<LayerExpression> MakeLayerExpression(pnnx::Operator *opt) {
+        Check check;
+        check(!opt->inputnames.empty()) << "failed to create layer expression; input should contain at least one tensor";
+        check(opt->outputs.size()==1) << "failed to create layer expression; only produce one tensor as output";
 
+        auto expr = opt->params.find("expr");
+        check(expr != opt->params.end()) << "failed to create layer expression; cannot find parameter expression";
 
+        std::vector<std::string> output_name = {opt->outputs[0]->name};
 
+        return std::make_shared<LayerExpression>(std::move(opt->name), std::move(opt->inputnames), std::move(output_name), std::move(expr->second.s));
+    };
 
 }

@@ -22,12 +22,20 @@ namespace sky_infer {
 
     public:
 
-        LayerFlatten(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output, int start_dim, int end_dim);
+        LayerFlatten(std::string name,
+                     std::vector<std::string> input_name, std::vector<std::string> output_name,
+                     int start_dim, int end_dim);
+
+        void AssignInput(std::shared_ptr<Batchf> input) override {input_ = input;};
+
+        void AssignOutput(std::shared_ptr<Batchf> output) override {output_ = output;};
 
         void Forward() override;
 
         ~LayerFlatten() override = default;
     };
+
+    std::shared_ptr<LayerFlatten> MakeLayerFlatten(pnnx::Operator *opt);
 }
 
 

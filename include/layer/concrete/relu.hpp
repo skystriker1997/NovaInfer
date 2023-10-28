@@ -19,12 +19,18 @@ namespace sky_infer {
 
     public:
 
-        LayerReLU(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output);
+        LayerReLU(std::string name, std::vector<std::string> input_name, std::vector<std::string> output_name);
+
+        void AssignInput(std::shared_ptr<Batchf> input) override {input_ = input;};
+
+        void AssignOutput(std::shared_ptr<Batchf> output) override {output_ = output;};
 
         void Forward() override;
 
         ~LayerReLU() override = default;
     };
+
+    std::shared_ptr<LayerReLU> MakeLayerReLU(pnnx::Operator *opt);
 }
 
 

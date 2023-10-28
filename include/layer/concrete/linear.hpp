@@ -19,18 +19,27 @@ namespace sky_infer {
 
 
         Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> weights_;
-        bool use_bias;
+        bool use_bias_;
         Eigen::RowVectorXf bias_;
 
 
     public:
 
-        LayerLinear(std::string name, std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output, const Eigen::Ref<const Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& weights, bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf>& bias);
+        LayerLinear(std::string name,
+                    std::vector<std::string> input_name, std::vector<std::string> output_name,
+                    const Eigen::Ref<const Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> &weights,
+                    bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf> &bias);
+
+        void AssignInput(std::shared_ptr<Batchf> input) override {input_ = input;};
+
+        void AssignOutput(std::shared_ptr<Batchf> output) override {output_ = output;};
 
         void Forward() override;
 
         ~LayerLinear() override = default;
     };
+
+    std::shared_ptr<LayerLinear> MakeLayerLinear(pnnx::Operator *opt);
 }
 
 
