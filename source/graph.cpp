@@ -10,37 +10,40 @@ namespace sky_infer {
         pnnx::Graph pnnx_graph;
 
         check_(pnnx_graph.load(param_path_, bin_path_) == 0)
-                << "failed to initialise graph; invalid path: " + std::string("bin ") + bin_path_ + " param " +
-                   param_path_;
+                << "failed to initialise graph; invalid path: " + std::string("bin ") + bin_path_ + " param " + param_path_;
 
-
-        auto refine_shape = [](const std::vector<int>& raw_shape, Check& check) {
-            check(!raw_shape.empty() && raw_shape.size()<=4) << "failed to initialise graph; size of operand's shape vector should be between 1 and 4 (inclusive)";
+        auto check_shape = [](const std::vector<int> &raw_shape, Check &check) -> std::vector<int> {
             for(int i: raw_shape)
                 check(i>0) << "failed to initialise graph; elements of operand's shape vector should be positive int";
-            std::vector<int> shape(4);
+            std::vector<int> shape(3);
             auto n = raw_shape.size();
-            if(n == 1)
-                shape = {1, 1, 1, raw_shape[0]};
-            else if(n == 2)
-                shape = {1, 1, raw_shape[0], raw_shape[1]};
-            else if(n == 3)
-                shape = {1, raw_shape[0], raw_shape[1], raw_shape[2]};
-            else
+            if(n == 1) {
+                shape = {1, 1, raw_shape[0]};
+            } else if(n == 2) {
+                shape = {1, raw_shape[0], raw_shape[1]};
+            } else if(n == 3) {
                 shape = raw_shape;
+            } else {
+                for(int i=0; i<n-3; i++) {
+                    check(raw_shape[i] == 1) << "failed to initialise graph; operand should be 3-dimensional";
+                }
+                shape = {raw_shape[n-3], raw_shape[n-2], raw_shape[n-1]};
+            }
             return shape;
         };
 
-
-        for (auto *opd: pnnx_graph.operands) {
+        for (pnnx::Operand *opd: pnnx_graph.operands) {
             check_(opd->type == 1) << "failed to construct data node; only support float32";
-            std::vector<int> shape = refine_shape(opd->shape, check_);
-            batches_.insert({opd->name, std::make_shared<Batchf>(shape[0], Tensor<float>{std::vector<int>{shape[1], shape[2], shape[3]}})});
-            if (opd->producer->type == "pnnx_Input")
-                raw_inputs_.insert(opd->name);
+            std::vector<int> shape = check_shape(opd->shape, check_);
+            data_node_shape_.insert({opd->name, shape});
+            data_nodes_.insert({opd->name, std::make_shared<Batchf>()});
+            if (opd->producer->type == "pnnx_Input") {
+                check_(initial_data_.empty()) << "failed to construct data node; allow only one initial data";
+                initial_data_ = opd->name;
+            }
         }
 
-        for (auto *opt: pnnx_graph.ops) {
+        for (pnnx::Operator *opt: pnnx_graph.ops) {
             if (opt->type == "pnnx_Input" || opt->type == "pnnx_Output")
                 continue;
             check_(layers_.find(opt->name) == layers_.end()) << "failed to add layer; duplicate layer name";
@@ -53,142 +56,45 @@ namespace sky_infer {
 
 
 
-
-
     std::shared_ptr<Layer> Graph::CreateLayer(pnnx::Operator *opt) {
 
-        std::vector<std::shared_ptr<Batchf>> inputs;
-        for(auto* opd: opt->inputs) {
-            auto in = batches_.find(opd->name);
-            check_(in != batches_.end()) << "failed to create layer; cannot find corresponding input";
-            inputs.push_back(in->second);
-        }
-
-        std::vector<std::shared_ptr<Batchf>> outputs;
-        for(auto* opd: opt->outputs) {
-            auto out = batches_.find(opd->name);
-            check_(out != batches_.end()) << "failed to create layer; cannot find corresponding output";
-            outputs.push_back(out->second);
-        }
-
-            // relu
         if (opt->type == "nn.ReLU") {
-            check_(inputs.size()==1 && outputs.size()==1) << "failed to create layer relu; only support one batch as input and one batch as output";
-            return std::make_shared<LayerReLU>(std::move(opt->name), inputs[0], outputs[0]);
-        }
 
-            // expression
-        else if (opt->type == "Expression") {
+            return MakeLayerReLU(opt);
 
-            check_(!inputs.empty() && outputs.size()==1) << "failed to create layer expression; only support one batch as output; at least one batch as input";
+        } else if (opt->type == "Expression") {
 
-            auto expr = opt->params.find("expr");
+            return MakeLayerExpression(opt);
 
-            check_(expr != opt->params.end()) << "failed to create expression layer; miss parameter expression";
+        } else if (opt->type == "nn.MaxPool2d") {
 
-            return std::make_shared<LayerExpression>(std::move(opt->name), std::move(inputs), outputs[0], std::move(expr->second.s));
-        }
+            return MakeLayerMaxpooling(opt);
 
-            // maxpooling
-        else if (opt->type == "nn.MaxPool2d") {
-            check_(inputs.size()==1 && outputs.size()==1) << "failed to create layer maxpooling; only support one batch as input and one batch as output";
+        } else if (opt->type == "torch.flatten") {
 
-            auto stride = opt->params.find("stride");
-            check_(stride != opt->params.end()) << "failed to create maxpooling layer; miss parameter stride";
-            auto padding = opt->params.find("padding");
-            check_(padding != opt->params.end()) << "failed to create maxpooling layer; miss parameter padding";
-            auto kernel_size = opt->params.find("kernel_size");
-            check_(kernel_size != opt->params.end()) << "failed to create maxpooling layer; miss parameter kernel_size";
+            return MakeLayerFlatten(opt);
 
+        } else if (opt->type == "nn.Linear") {
 
-            return std::make_shared<LayerMaxpooling>(std::move(opt->name), inputs[0], outputs[0],
-                                                     std::move(stride->second.ai),
-                                                     std::move(padding->second.ai),
-                                                     std::move(kernel_size->second.ai));
+            return MakeLayerLinear(opt);
 
-        }
+        } else if (opt->type == "nn.Sigmoid") {
 
-        // flatten
+            return MakeLayerSigmoid(opt);
 
-        else if (opt->type == "torch.flatten") {
-            check_(inputs.size()==1 && outputs.size()==1) << "failed to create layer flatten; only support one batch as input and one batch as output";
+        } else if (opt->type == "nn.Conv2d") {
 
-            auto start_dim = opt->params.find("start_dim");
-            check_(start_dim != opt->params.end()) << "failed to create flatten layer; miss parameter start_dim";
+            return MakeLayerConvolution(opt);
 
-            auto end_dim = opt->params.find("end_dim");
-            check_(end_dim != opt->params.end()) << "failed to create flatten layer; miss parameter end_dim";
+        } else if (opt->type == "nn.ConvTranspose2d") {
 
-            return std::make_shared<LayerFlatten>(std::move(opt->name), inputs[0], outputs[0],
-                                                  start_dim->second.i, end_dim->second.i);
-        }
+            return MakeLayerTransposedConvolution(opt);
 
+        } else {
 
-        else if (opt->type == "nn.Linear") {
-            check_(inputs.size()==1 && outputs.size()==1) << "failed to create layer linear; only support one batch as input and one batch as output";
-
-            auto convert_to_float = [](std::vector<char>& attr_val, Check& check){
-                std::vector<float> vect_float;
-                auto float_size = sizeof(float);
-                check(attr_val.size() % float_size == 0) << "failed to convert char arr to float arr; total bytes cannot be divided by size of a float";
-                for(auto i=0; i<attr_val.size()/float_size; i++) {
-                    float f = *((float*)attr_val.data()+i);
-                    vect_float.push_back(f);
-                }
-                return vect_float;
-            };
-
-            auto use_bias = opt->params.find("bias");
-            check_(use_bias != opt->params.end()) << "failed to create linear layer; miss parameter bias";
-            Eigen::VectorXf bias;
-
-            if(use_bias->second.b) {
-                auto item = opt->attrs.find("bias");
-                check_(item != opt->attrs.end()) << "failed to create linear layer; miss attribute bias";
-
-                std::vector<int>& shape = item->second.shape;
-
-                check_(!shape.empty()) << "failed to create linear layer; bias should be 1-dimensional";
-                if(shape.size()>1) {
-                    for(int i=0; i<shape.size()-1; i++)
-                        check_(shape[i]==1) << "failed to create linear layer; bias should be 1-dimensional";
-                }
-
-                std::vector<float> bias_f = convert_to_float(item->second.data, check_);
-
-                bias = Eigen::Map<Eigen::RowVectorXf>(bias_f.data(), shape.back());
-
-            }
-
-            auto item = opt->attrs.find("weight");
-            check_(item != opt->attrs.end()) << "failed to create linear layer; miss attribute weight";
-
-            std::vector<int>& shape = item->second.shape;
-            check_(!shape.empty()) << "failed to create linear layer; weights should be 2-dimensional";
-            if(shape.size()>2) {
-                for(int i=0; i<shape.size()-2; i++)
-                    check_(shape[i]==1) << "failed to create linear layer; weights should be 2-dimensional";
-            }
-
-            std::vector<float> weights_f =  convert_to_float(item->second.data, check_);
-            Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> weights = Eigen::Map<Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(weights_f.data(),shape[shape.size()-2],shape[shape.size()-1]);
-
-
-            return std::make_shared<LayerLinear>(std::move(opt->name), inputs[0], outputs[0],
-                                                       weights, use_bias->second.b, bias);
+            check_(false) << "failed to create layer; unsupported layer type: " + opt->type;
 
         }
-        else if(opt->type == "nn.Sigmoid") {
-            check_(inputs.size()==1 && outputs.size()==1) << "failed to create layer sigmoid; only support one batch as input and one batch as output";
-            return std::make_shared<LayerSigmoid>(std::move(opt->name), inputs[0], outputs[0]);
-        }
-    }
-
-
-
-    void Graph::Forward() {
-        for (const auto &layer: topo_sorted_layers_)
-            layer->Forward();
     }
 
 
@@ -209,7 +115,7 @@ namespace sky_infer {
             bool first = true;
             int in_degree = 0;
             for (const auto &input: layer->GetInputName()) {
-                if (raw_inputs_.find(input) == raw_inputs_.end()) {
+                if (input == initial_data_) {
                     first = false;
                     in_degree++;
                 }
@@ -237,6 +143,44 @@ namespace sky_infer {
                 << "failed to topo sort layers; the pnnx graph is not a directed acyclic one";
 
     }
+
+
+    void Graph::AppendInput(const Tensor<float> &input) {
+        for (auto &[name, batch]: data_nodes_) {
+            if (name == initial_data_) {
+                std::vector<int> shape = {input.Channels(), input.Rows(), input.Cols()};
+                check_(data_node_shape_.at(initial_data_) == shape) << "failed to push input; the shape of input tensor is not as expected";
+                batch->emplace_back(input);
+            } else {
+                batch->emplace_back((data_node_shape_.at(name)));
+            }
+        }
+        batch_size++;
+    }
+
+
+    void Graph::Forward() {
+        if (batch_size > 0) {
+            for(const auto &layer: topo_sorted_layers_) {
+                if(layer->GetType() == LayerType::Expression) {
+                    std::vector<std::shared_ptr<Batchf>> inputs;
+                    std::shared_ptr<Batchf> output;
+                    for(const auto &name: layer->GetInputName()) {
+                        inputs.push_back(data_nodes_.at(name));
+                    }
+                    std::dynamic_pointer_cast<LayerExpression>(layer)->AssignInputs(inputs);
+                    layer->AssignOutput(data_nodes_.at(layer->GetOutputName()[0]));
+                } else {
+                    layer->AssignInput(data_nodes_.at(layer->GetInputName()[0]));
+                    layer->AssignOutput(data_nodes_.at(layer->GetOutputName()[0]));
+                }
+            }
+
+            for (const auto &layer: topo_sorted_layers_)
+                layer->Forward();
+        }
+    }
+
 
 
 }
