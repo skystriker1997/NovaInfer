@@ -32,7 +32,13 @@ SCENARIO("test layer linear", "[layer_linear]") {
 
         Eigen::RowVectorXf bias{{-10, 10}};
 
-        LayerLinear layer(name, input, output, weights, true, bias);
+        std::vector<std::string> input_name = {"example_in"};
+        std::vector<std::string> output_name = {"example_out"};
+
+        LayerLinear layer(name, input_name, output_name, weights, true, bias);
+
+        layer.AssignInput(input);
+        layer.AssignOutput(output);
 
         WHEN("execute linear") {
             layer.Forward();

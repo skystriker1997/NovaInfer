@@ -28,7 +28,13 @@ SCENARIO("test layer flatten", "[layer_flatten]") {
         int flatten_start_dim = 1;
         int flatten_end_dim = 3;
 
-        LayerFlatten layer(name, input, output, flatten_start_dim, flatten_end_dim);
+        std::vector<std::string> input_name = {"example_in"};
+        std::vector<std::string> output_name = {"example_out"};
+
+        LayerFlatten layer(name, input_name, output_name, flatten_start_dim, flatten_end_dim);
+
+        layer.AssignInput(input);
+        layer.AssignOutput(output);
 
         WHEN("execute flatten") {
             layer.Forward();

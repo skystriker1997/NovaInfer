@@ -24,7 +24,12 @@ SCENARIO("test layer relu", "[layer_relu]") {
 
         std::string name = "relu_test";
 
-        LayerReLU layer(name, input, output);
+        std::vector<std::string> input_name = {"example_in"};
+        std::vector<std::string> output_name = {"example_out"};
+        LayerReLU layer(name, input_name, output_name);
+
+        layer.AssignInput(input);
+        layer.AssignOutput(output);
 
         WHEN("execute relu") {
             layer.Forward();
