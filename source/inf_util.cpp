@@ -40,7 +40,7 @@ Check& Check::operator()(bool condition) {
         return *this;
     }
 
-void Check::operator << (std::string&& message) const {
+void Check::operator << (std::string_view message) const {
         if(!condition_) {
             spdlog::critical(message);
             std::terminate();

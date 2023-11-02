@@ -1,7 +1,7 @@
 #ifndef SKY_INFER_UTIL
 #define SKY_INFER_UTIL
 
-#include <string>
+#include <string_view>
 #include <spdlog/spdlog.h>
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -22,7 +22,7 @@ public:
 
     Check& operator()(bool condition);
 
-    void operator << (std::string&& message) const;
+    void operator << (std::string_view message) const;
 
     ~Check() = default;
 
