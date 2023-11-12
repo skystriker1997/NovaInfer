@@ -32,6 +32,9 @@ namespace sky_infer {
 
         auto batch_size = input_->size();
 
+        omp_set_num_threads(omp_get_num_procs());
+
+#pragma omp parallel for default(shared)
         for(int i=0; i<batch_size; i++) {
             Tensor<float> &in = input_->at(i);
             Tensor<float> &out = output_->at(i);

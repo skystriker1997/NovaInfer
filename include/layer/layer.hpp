@@ -6,6 +6,7 @@
 #include "tensor/tensor.hpp"
 #include <cmath>
 #include "pnnx/ir.h"
+#include <omp.h>
 
 
 namespace sky_infer {

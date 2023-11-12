@@ -38,6 +38,9 @@ namespace sky_infer {
         int kernel_w = weights_[0].Cols();
         int kernel_c = weights_[0].Channels();
 
+        omp_set_num_threads(omp_get_num_procs());
+
+#pragma omp parallel for default(shared)
         for(int t=0; t<batch_size; t++) {
             Tensor<float> &in = input_->at(t);
             Tensor<float> &out = output_->at(t);
@@ -153,7 +156,7 @@ namespace sky_infer {
             check(attr_val.size() % float_size == 0) << "failed to convert char arr to float arr; total bytes should be divisible by size of a float";
             for(auto i=0; i<attr_val.size()/float_size; i++) {
                 float f = *((float*)attr_val.data()+i);
-                vect_float.push_back(f);
+                vect_float.emplace_back(f);
             }
             return vect_float;
         };

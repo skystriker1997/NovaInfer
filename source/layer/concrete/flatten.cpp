@@ -25,6 +25,9 @@ namespace sky_infer {
                    "greater than 3";
 
         if (start == 1 && end == 3) {
+            omp_set_num_threads(omp_get_num_procs());
+
+#pragma omp parallel for default(shared)
             for (int i = 0; i < input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -36,6 +39,9 @@ namespace sky_infer {
                 out = in.Reshape({new_channel, new_row, new_col});
             }
         } else if (start == 2 && end == 3) {
+            omp_set_num_threads(omp_get_num_procs());
+
+#pragma omp parallel for default(shared)
             for (int i = 0; i < input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -47,6 +53,9 @@ namespace sky_infer {
                 out = in.Reshape({new_channel, new_row, new_col});
             }
         } else {
+            omp_set_num_threads(omp_get_num_procs());
+
+#pragma omp parallel for default(shared)
             for (int i = 0; i < input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);

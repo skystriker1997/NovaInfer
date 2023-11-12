@@ -22,6 +22,9 @@ namespace sky_infer {
         Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> weights_t = weights_.transpose();
 
         if(use_bias_) {
+            omp_set_num_threads(omp_get_num_procs());
+
+#pragma omp parallel for default(shared)
             for(int i=0; i<input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -38,6 +41,9 @@ namespace sky_infer {
                 out.WriteMatrix(0) = (in.ReadMatrix(0) * weights_t).rowwise() + bias_;
             }
         } else {
+            omp_set_num_threads(omp_get_num_procs());
+
+#pragma omp parallel for default(shared)
             for(int i=0; i<input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -70,7 +76,7 @@ namespace sky_infer {
             check(attr_val.size() % float_size == 0) << "failed to convert char arr to float arr; total bytes cannot be divided by size of a float";
             for(auto i=0; i<attr_val.size()/float_size; i++) {
                 float f = *((float*)attr_val.data()+i);
-                vect_float.push_back(f);
+                vect_float.emplace_back(f);
             }
             return vect_float;
         };

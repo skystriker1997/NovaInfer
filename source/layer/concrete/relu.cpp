@@ -12,7 +12,9 @@ namespace sky_infer {
 
 
     void LayerReLU::Forward() {
+        omp_set_num_threads(omp_get_num_procs());
 
+#pragma omp parallel for default(shared)
         for(int tensor=0; tensor < input_->size(); tensor++) {
             Tensor<float> &in = input_->at(tensor);
             Tensor<float> &out = output_->at(tensor);
