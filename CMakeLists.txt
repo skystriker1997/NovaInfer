@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.23)
-project(sky_infer)
+project(NovaInfer)
 
 list(APPEND CMAKE_MODULE_PATH /usr/local/lib)
 
