@@ -1,7 +1,7 @@
-# Nova Infer
+# NovaInfer
 
 A deep learning inference framework in development. 
 
-The ultimate goal is to customise Nova Infer with my interests, supporting most models on multiple platforms. 
+The ultimate goal is to customise NovaInfer with my interests, supporting most models on multiple platforms. 
 
 I choose **PyTorch Neural Network eXchange(PNNX)** as the standard of model format. Refer this: https://github.com/Tencent/ncnn/tree/master/tools/pnnx
