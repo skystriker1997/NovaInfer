@@ -5,7 +5,7 @@
 
 SCENARIO("test layer sigmoid", "[layer_sigmoid]") {
 
-    using namespace sky_infer;
+    using namespace nova_infer;
 
     GIVEN("one batch as input and one batch as output") {
         set_multi_sink();

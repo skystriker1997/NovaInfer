@@ -1,10 +1,10 @@
-#ifndef SKY_INFER_LAYER_FLATTEN
-#define SKY_INFER_LAYER_FLATTEN
+#ifndef NOVA_INFER_LAYER_FLATTEN
+#define NOVA_INFER_LAYER_FLATTEN
 
 
 #include "layer/layer.hpp"
 
-namespace sky_infer {
+namespace nova_infer {
     class LayerFlatten: public Layer {
     private:
 

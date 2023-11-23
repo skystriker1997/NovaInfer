@@ -1,10 +1,10 @@
-#ifndef SKY_INFER_LAYER_SIGMOID
-#define SKY_INFER_LAYER_SIGMOID
+#ifndef NONA_INFER_LAYER_SIGMOID
+#define NONA_INFER_LAYER_SIGMOID
 
 
 #include "layer/layer.hpp"
 
-namespace sky_infer {
+namespace nova_infer {
     class LayerSigmoid: public Layer {
     private:
 

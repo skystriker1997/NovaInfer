@@ -1,10 +1,10 @@
-#ifndef SKY_INFER_LAYER_TRANSPOSED_CONVOLUTION
-#define SKY_INFER_LAYER_TRANSPOSED_CONVOLUTION
+#ifndef NOVA_INFER_LAYER_TRANSPOSED_CONVOLUTION
+#define NOVA_INFER_LAYER_TRANSPOSED_CONVOLUTION
 
 
 #include "layer/layer.hpp"
 
-namespace sky_infer {
+namespace nova_infer {
     class LayerTransposedConvolution : public Layer {
     private:
 
@@ -38,7 +38,7 @@ namespace sky_infer {
                 std::vector<std::string> input_name,
                 std::vector<std::string> output_name,
                 Batchf weights,
-                bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf> &bias,
+                bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf> bias,
                 int padding_h, int padding_w,
                 int stride_h, int stride_w,
                 int groups,

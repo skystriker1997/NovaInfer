@@ -1,12 +1,12 @@
 #include "layer/concrete/transposed_convolution.hpp"
 
 
-namespace sky_infer {
+namespace nova_infer {
     LayerTransposedConvolution::LayerTransposedConvolution(std::string name, std::vector<std::string> input_name,
                                                            std::vector<std::string> output_name,
-                                                           sky_infer::Batchf weights,
+                                                           Batchf weights,
                                                            bool use_bias,
-                                                           const Eigen::Ref<const Eigen::RowVectorXf> &bias,
+                                                           const Eigen::Ref<const Eigen::RowVectorXf> bias,
                                                            int padding_h, int padding_w, int stride_h, int stride_w,
                                                            int groups, int output_padding_h, int output_padding_w) {
         check_(groups>=1) << "failed to construct layer transposed convolution; number of groups should be a positive integer";
@@ -40,7 +40,7 @@ namespace sky_infer {
 
         omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
         for(int t=0; t<batch_size; t++) {
             Tensor<float> &in = input_->at(t);
             Tensor<float> &out = output_->at(t);

@@ -1,10 +1,10 @@
-#ifndef SKY_INFER_LAYER_MAXPOOLING
-#define SKY_INFER_LAYER_MAXPOOLING
+#ifndef NOVA_INFER_LAYER_MAXPOOLING
+#define NOVA_INFER_LAYER_MAXPOOLING
 
 
 #include "layer/layer.hpp"
 
-namespace sky_infer {
+namespace nova_infer {
 
     class LayerMaxpooling: public Layer {
 

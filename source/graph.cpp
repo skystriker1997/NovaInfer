@@ -1,7 +1,7 @@
 #include "graph.hpp"
 
 
-namespace sky_infer {
+namespace nova_infer {
 
     Graph::Graph(const std::string &param_path, const std::string &bin_path): param_path_(param_path), bin_path_(bin_path) {
 
@@ -40,6 +40,10 @@ namespace sky_infer {
             if (opd->producer->type == "pnnx_Input") {
                 check_(initial_data_.empty()) << "failed to construct data node; allow only one initial data";
                 initial_data_ = opd->name;
+            }
+            if (opd->consumers[0]->type == "pnnx_Output") {
+                check_(final_output_.empty()) << "failed to construct data node; allow only one final output";
+                final_output_ = opd->name;
             }
         }
 
@@ -108,7 +112,7 @@ namespace sky_infer {
 
         for (auto &[name, layer]: layers_) {
             for (const auto &input: layer->GetInputName())
-                consumers[input].push_back(layer);
+                consumers[input].emplace_back(layer);
         }
 
         for (auto &[name, layer]: layers_) {
@@ -166,7 +170,7 @@ namespace sky_infer {
                     std::vector<std::shared_ptr<Batchf>> inputs;
                     std::shared_ptr<Batchf> output;
                     for(const auto &name: layer->GetInputName()) {
-                        inputs.push_back(data_nodes_.at(name));
+                        inputs.emplace_back(data_nodes_.at(name));
                     }
                     std::dynamic_pointer_cast<LayerExpression>(layer)->AssignInputs(inputs);
                     layer->AssignOutput(data_nodes_.at(layer->GetOutputName()[0]));

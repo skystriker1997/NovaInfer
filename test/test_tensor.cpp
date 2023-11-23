@@ -7,7 +7,7 @@
 
 SCENARIO("tensor can be operated properly", "[tensor]") {
 
-    using namespace sky_infer;
+    using namespace nova_infer;
 
     GIVEN("two tensors x, y with some items") {
         set_multi_sink();

@@ -1,5 +1,5 @@
-#ifndef SKY_INFER_TENSOR
-#define SKY_INFER_TENSOR
+#ifndef NOVA_INFER_TENSOR
+#define NOVA_INFER_TENSOR
 
 
 #include <Eigen/Eigen>
@@ -9,14 +9,17 @@
 #include <iostream>
 
 
+namespace nova_infer {
 
-namespace sky_infer {
+#define EIGEN_DONT_PARALLELIZE
 
     template<typename T>
     class Tensor {
     private:
         std::vector<int> shape_;
+
         std::vector<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data_;
+
         Check check_;
 
     public:
@@ -26,14 +29,11 @@ namespace sky_infer {
 
         Tensor(const std::vector<int> &shape, T value);
 
-        Tensor(const std::vector<int> &shape, std::vector<T> &data);
+        Tensor(const std::vector<int> &shape, const std::vector<T> &data);
 
         Tensor(const Tensor<T> &rhs);
 
         Tensor(Tensor<T> &&rhs) noexcept;
-
-//        explicit Tensor(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& data);
-//        explicit Tensor(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>&& data) noexcept;
 
         Tensor<T> &operator=(const Tensor<T> &rhs);
 
@@ -41,18 +41,11 @@ namespace sky_infer {
 
         void Swap(Tensor<T> &rhs) noexcept;
 
-//        Tensor<T> &operator=(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& data);
-//        Tensor<T> &operator=(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>&& data) noexcept;
-
-
         ~Tensor() = default;
 
-
-       // [[nodiscard]] const std::vector<int>& ReadShape() const;
-
-       int Channels();
-       int Rows();
-       int Cols();
+       int Channels() const ;
+       int Rows() const ;
+       int Cols() const;
 
         std::vector<int>& WriteShape();
 
@@ -75,6 +68,9 @@ namespace sky_infer {
         Tensor<T> operator*(const Tensor<T> &rhs);
 
         Tensor<T> operator%(const Tensor<T> &rhs);
+
+
+
 
 
 //        Tensor<T> Flatten();
@@ -149,7 +145,7 @@ namespace sky_infer {
 
 
     template<typename T>
-    Tensor<T>::Tensor(const std::vector<int> &shape, std::vector<T> &data) {
+    Tensor<T>::Tensor(const std::vector<int> &shape, const std::vector<T> &data) {
         shape_.resize(3);
         check_(!shape.empty() && shape.size() <= 3)
                         << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
@@ -199,21 +195,6 @@ namespace sky_infer {
 
 
 
-//    template<typename T>
-//    Tensor<T>::Tensor(const std::vector<Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> &data) {
-//        data_ = data;
-//        shape_ = std::vector<int>{data.size(), data[0].rows(), data[0].cols()};
-//    }
-//
-//
-//    template<typename T>
-//    Tensor<T>::Tensor(std::vector<Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> &&data) noexcept {
-//        data_ = data;
-//        shape_ = std::vector<int>{data_.size(), data_[0].rows(), data_[0].cols()};
-//    }
-
-
-
     template<typename T>
     Tensor<T> &Tensor<T>::operator=(const Tensor<T> &rhs) {
         data_ = rhs.data_;
@@ -235,22 +216,6 @@ namespace sky_infer {
         std::swap(shape_, rhs.shape_);
         std::swap(data_, rhs.data_);
     }
-
-
-//    template<typename T>
-//    Tensor<T> &Tensor<T>::operator=(const std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>& data) {
-//        data_ = data;
-//        shape_ = std::vector<int>{data.size(), data[0].rows(), data[0].cols()};
-//        return *this;
-//    };
-
-
-//    template<typename T>
-//    Tensor<T> &Tensor<T>::operator=(std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>&& data) noexcept{
-//        data_ = data;
-//        shape_ = std::vector<int>{data_.size(), data_[0].rows(), data_[0].cols()};
-//        return *this;
-//    };
 
 
 
@@ -277,21 +242,21 @@ namespace sky_infer {
 //    }
 
     template<typename T>
-    int Tensor<T>::Channels() {
+    int Tensor<T>::Channels() const{
         return shape_[0];
     }
 
 
 
     template<typename T>
-    int Tensor<T>::Rows() {
+    int Tensor<T>::Rows() const{
         return shape_[1];
     }
 
 
 
     template<typename T>
-    int Tensor<T>::Cols() {
+    int Tensor<T>::Cols() const{
         return shape_[2];
     }
 

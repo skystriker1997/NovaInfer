@@ -1,7 +1,7 @@
 #include "layer/concrete/softmax.hpp"
 
 
-namespace sky_infer {
+namespace nova_infer {
 
     LayerSoftmax::LayerSoftmax(std::string name, std::vector<std::string> input_name,
                                std::vector<std::string> output_name, int dim) {
@@ -17,7 +17,7 @@ namespace sky_infer {
         int dim = dim_;
         omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
         for(int tensor=0; tensor < input_->size(); tensor++) {
             Tensor<float> &in = input_->at(tensor);
             Tensor<float> &out = output_->at(tensor);
@@ -31,8 +31,8 @@ namespace sky_infer {
             else
                 raw_dim_size = 3;
 
-            if(dim<0)
-                dim += raw_dim_size;
+            if(dim<0)    // reversed index used in python list obj
+                dim += raw_dim_size;   // convert to the format of c++
 
             if(raw_dim_size==1)
                 dim += 2;

@@ -1,11 +1,11 @@
-#ifndef SKY_INFER_DATA_TYPE
-#define SKY_INFER_DATA_TYPE
+#ifndef NOVA_INFER_DATA_TYPE
+#define NOVA_INFER_DATA_TYPE
 
 
 
 
 
-namespace sky_infer {
+namespace nova_infer {
 
 
     enum LayerType {
@@ -18,7 +18,8 @@ namespace sky_infer {
         Flatten,
         Sigmoid,
         Conv,
-        DeConv
+        DeConv,
+        Cat
     };
 
 

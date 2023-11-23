@@ -1,5 +1,5 @@
-#ifndef SKY_INFER_LAYER
-#define SKY_INFER_LAYER
+#ifndef NOVA_INFER_LAYER
+#define NOVA_INFER_LAYER
 
 
 #include "type.hpp"
@@ -9,7 +9,7 @@
 #include <omp.h>
 
 
-namespace sky_infer {
+namespace nova_infer {
 
     class Graph;
 

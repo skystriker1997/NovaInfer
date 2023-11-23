@@ -1,11 +1,11 @@
 #include "layer/concrete/flatten.hpp"
 #include <catch2/catch_test_macros.hpp>
-#include <cmath>
+
 
 
 SCENARIO("test layer flatten", "[layer_flatten]") {
 
-    using namespace sky_infer;
+    using namespace nova_infer;
 
     GIVEN("one batch as input and one batch as output") {
         set_multi_sink();

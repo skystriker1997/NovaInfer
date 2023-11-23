@@ -1,10 +1,10 @@
-#ifndef SKY_INFER_LAYER_SOFTMAX
-#define SKY_INFER_LAYER_SOFTMAX
+#ifndef NOVA_INFER_LAYER_SOFTMAX
+#define NOVA_INFER_LAYER_SOFTMAX
 
 
 #include "layer/layer.hpp"
 
-namespace sky_infer {
+namespace nova_infer {
     class LayerSoftmax: public Layer {
     private:
 

@@ -1,5 +1,5 @@
-#ifndef SKY_INFER_GRAPH
-#define SKY_INFER_GRAPH
+#ifndef NOVA_INFER_GRAPH
+#define NOVA_INFER_GRAPH
 
 
 #include "layer/concrete/convolution.hpp"
@@ -20,7 +20,7 @@
 
 
 
-namespace sky_infer {
+namespace nova_infer {
 
     class Graph {
     private:
@@ -36,6 +36,7 @@ namespace sky_infer {
         std::vector< std::shared_ptr<Layer>> topo_sorted_layers_;
 
         std::string initial_data_;
+        std::string final_output_;
 
         std::shared_ptr<Layer> CreateLayer(pnnx::Operator *opt);
 

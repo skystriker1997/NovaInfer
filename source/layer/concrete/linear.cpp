@@ -1,11 +1,11 @@
 #include "layer/concrete/linear.hpp"
 
 
-namespace sky_infer {
+namespace nova_infer {
     LayerLinear::LayerLinear(std::string name,
                              std::vector<std::string> input_name, std::vector<std::string> output_name,
-                             const Eigen::Ref<const Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> &weights,
-                             bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf> &bias)
+                             const Eigen::Ref<const Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> weights,
+                             bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf> bias)
     {
         type_ = LayerType::Linear;
         name_ = std::move(name);
@@ -24,7 +24,7 @@ namespace sky_infer {
         if(use_bias_) {
             omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
             for(int i=0; i<input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -43,7 +43,7 @@ namespace sky_infer {
         } else {
             omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
             for(int i=0; i<input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);

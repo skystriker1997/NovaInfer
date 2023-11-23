@@ -1,10 +1,10 @@
-#ifndef SKY_INFER_LAYER_EXPRESSION
-#define SKY_INFER_LAYER_EXPRESSION
+#ifndef NOVA_INFER_LAYER_EXPRESSION
+#define NOVA_INFER_LAYER_EXPRESSION
 
 #include "layer/layer.hpp"
 
 
-namespace sky_infer {
+namespace nova_infer {
 
 
     class LayerExpression: public Layer {
@@ -26,7 +26,7 @@ namespace sky_infer {
 
     public:
         LayerExpression(std::string name,
-                        std::vector<std::string> input_name, std::vector<std::string> output_name,
+                        std::vector<std::string> input_names, std::vector<std::string> output_name,
                         std::string expression);
 
         void AssignInputs(std::vector<std::shared_ptr<Batchf>> inputs) {inputs_ = inputs;};

@@ -1,7 +1,7 @@
 #include "layer/concrete/maxpooling.hpp"
 
 
-namespace sky_infer {
+namespace nova_infer {
 
 
     LayerMaxpooling::LayerMaxpooling(std::string name,
@@ -34,7 +34,7 @@ namespace sky_infer {
 
         omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
         for(int i=0; i<batch_size; i++) {
             Tensor<float> &in = input_->at(i);
             Tensor<float> &out = output_->at(i);

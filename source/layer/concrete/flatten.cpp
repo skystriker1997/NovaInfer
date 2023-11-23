@@ -1,6 +1,6 @@
 #include "layer/concrete/flatten.hpp"
 
-namespace sky_infer {
+namespace nova_infer {
     LayerFlatten::LayerFlatten(std::string name,
                                std::vector<std::string> input_name, std::vector<std::string> output_name,
                                int start_dim, int end_dim)
@@ -27,7 +27,7 @@ namespace sky_infer {
         if (start == 1 && end == 3) {
             omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
             for (int i = 0; i < input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -41,7 +41,7 @@ namespace sky_infer {
         } else if (start == 2 && end == 3) {
             omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
             for (int i = 0; i < input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -55,7 +55,7 @@ namespace sky_infer {
         } else {
             omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
             for (int i = 0; i < input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);

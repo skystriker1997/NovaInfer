@@ -2,14 +2,14 @@
 
 
 
-namespace sky_infer {
+namespace nova_infer {
 
     LayerExpression::LayerExpression(std::string name,
-                                     std::vector<std::string> input_name, std::vector<std::string> output_name,
+                                     std::vector<std::string> input_names, std::vector<std::string> output_name,
                                      std::string expression):
                                      type_(LayerType::Expression),
                                      name_(std::move(name)),
-                                     input_names_(std::move(input_name)), output_name_(std::move(output_name)),
+                                     input_names_(std::move(input_names)), output_name_(std::move(output_name)),
                                      expression_(std::move(expression))
     {
         Parse();

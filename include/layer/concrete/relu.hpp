@@ -1,10 +1,10 @@
-#ifndef SKY_INFER_LAYER_RELU
-#define SKY_INFER_LAYER_RELU
+#ifndef NOVA_INFER_LAYER_RELU
+#define NOVA_INFER_LAYER_RELU
 
 
 #include "layer/layer.hpp"
 
-namespace sky_infer {
+namespace nova_infer {
     class LayerReLU: public Layer {
     private:
 

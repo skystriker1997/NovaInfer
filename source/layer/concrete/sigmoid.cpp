@@ -1,7 +1,7 @@
 #include "layer/concrete/sigmoid.hpp"
 
 
-namespace sky_infer {
+namespace nova_infer {
     LayerSigmoid::LayerSigmoid(std::string name,
                                std::vector<std::string> input_name,
                                std::vector<std::string> output_name)
@@ -16,7 +16,7 @@ namespace sky_infer {
     void LayerSigmoid::Forward() {
         omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for
         for(int tensor=0; tensor < input_->size(); tensor++) {
             Tensor<float> &in = input_->at(tensor);
             Tensor<float> &out = output_->at(tensor);
