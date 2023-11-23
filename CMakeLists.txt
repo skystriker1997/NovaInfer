@@ -71,6 +71,11 @@ target_include_directories(softmax_test PUBLIC "./include")
 target_link_libraries(softmax_test PUBLIC layer Catch2::Catch2WithMain )
 
 
+add_executable(cat_test test/test_cat.cpp)
+target_include_directories(cat_test PUBLIC "./include")
+target_link_libraries(cat_test PUBLIC layer Catch2::Catch2WithMain )
+
+
 add_executable(openmp_test test/test_openmp.cpp)
 target_include_directories(openmp_test PUBLIC "./include")
 target_link_libraries(openmp_test PUBLIC OpenMP::OpenMP_CXX )
