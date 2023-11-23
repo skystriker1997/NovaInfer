@@ -69,13 +69,6 @@ namespace nova_infer {
 
         Tensor<T> operator%(const Tensor<T> &rhs);
 
-
-
-
-
-//        Tensor<T> Flatten();
-//        void FlattenInplace();
-
         void Print();
 
     };
@@ -124,7 +117,6 @@ namespace nova_infer {
                         << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
         for (int i: shape) {
             check_(i > 0) << "failed to construct tensor; any dimension cannot be less than 1";
-            //  i *= j;
         }
         if (shape.size() == 1) {
             shape_[0] = 1;
@@ -236,11 +228,6 @@ namespace nova_infer {
 
 
 
-//    template<typename T>
-//    const std::vector<int>& Tensor<T>::ReadShape() const {
-//        return shape_;
-//    }
-
     template<typename T>
     int Tensor<T>::Channels() const{
         return shape_[0];
@@ -268,9 +255,6 @@ namespace nova_infer {
     }
 
 
-
-
-    ////////////
 
     template<typename T>
     Tensor<T> Tensor<T>::operator+(const Tensor<T> &rhs) {
@@ -417,11 +401,7 @@ namespace nova_infer {
         check_(normal || left_broadcast_along_channel || right_broadcast_along_channel)
                         << "failed to coef-wisely multiply tensors; mismatching shapes";
 
-   //     int max_channel = shape_[0] > rhs.shape_[0] ? shape_[0] : rhs.shape_[0];
-
         Tensor<T> output(std::vector<int>{1, shape_[1], shape_[2]});
-
-        //    input1.shape_[0] == input2.shape_[0] &&
 
         if (normal)
             for (int i = 0; i < output.shape_[0]; i++)
@@ -511,7 +491,6 @@ namespace nova_infer {
 
 
         if(shape_to[0] != shape_[0]) {
-           // int i =;
             Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> flat(1,  shape_[0] * shape_[1] * shape_[2]);
             for (int i = 0; i < shape_[0]; i++) {
                 flat.block(0, shape_[1] * shape_[2] * i, 1, shape_[1] * shape_[2]) = data_[i].template reshaped<Eigen::RowMajor>(1, shape_[1] * shape_[2]);
@@ -550,7 +529,6 @@ namespace nova_infer {
         std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> tmp_data(shape_to[0]);
 
         if(shape_to[0] != shape_[0]) {
-            // int i =;
             Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> flat(1,  shape_[0] * shape_[1] * shape_[2]);
             for (int i = 0; i < shape_[0]; i++) {
                 flat.block(0, shape_[1] * shape_[2] * i, 1, shape_[1] * shape_[2]) = data_[i].template reshaped<Eigen::RowMajor>(1, shape_[1] * shape_[2]);
@@ -588,53 +566,7 @@ namespace nova_infer {
     using Batchf = std::vector<Tensor<float>>;
 
 
-
-//    template<typename T>
-//    struct Batch {
-//    private:
-//        Check check_;
-//
-//    public:
-//        std::vector<Tensor<T>> data_;
-//        std::vector<int> shape_;  //
-//        std::string name_;
-//
-//        Batch() = default;
-//
-//        Batch(const std::string &name, const std::vector<int> &shape);
-//
-//        ~Batch() = default;
-//    };
-//
-//
-//
-//    template<typename T>
-//    Batch<T>::Batch(const std::string &name, const std::vector<int> &shape) {
-//        name_ = name;
-//        int n = shape.size();
-//        check_(n > 0 && n < 5) << "failed to initialise batch; improper dimension number: " + std::to_string(n);
-//        for (int i: shape)
-//            check_(i > 0) << "failed to initialise operand; any dimension cannot be less than 1";
-//
-//        if (n == 4) {
-//            auto data = std::vector<Tensor<float>>(shape_[0],
-//                                                   Tensor<float>{std::vector<int>{shape_[1], shape_[2], shape_[3]}});
-//            data_ = std::move(data);
-//            shape_ = shape;
-//        } else {
-//            data_.emplace_back(shape);
-//            if (n == 3)
-//                shape_ = {1, shape[0], shape[1], shape[2]};
-//            else if (n == 2)
-//                shape_ = {1, 1, shape[0], shape[1]};
-//            else
-//                shape_ = {1, 1, 1, shape[0]};
-//        }
-//    }
-
-
 }
-
 
 
 

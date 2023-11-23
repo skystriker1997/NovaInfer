@@ -30,52 +30,52 @@ target_link_libraries(graph PUBLIC layer)
 
 ########
 
-add_executable(tensor_test test/test_tensor.cpp)
+add_executable(tensor_test test/tensor_test.cpp)
 target_include_directories(tensor_test PUBLIC "./include")
 target_link_libraries(tensor_test PRIVATE Eigen3::Eigen util Catch2::Catch2WithMain)
 
 
 
-add_executable(sigmoid_test test/test_sigmoid.cpp)
+add_executable(sigmoid_test test/sigmoid_test.cpp)
 target_include_directories(sigmoid_test PUBLIC "./include")
 target_link_libraries(sigmoid_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(relu_test test/test_relu.cpp)
+add_executable(relu_test test/relu_test.cpp)
 target_include_directories(relu_test PUBLIC "./include")
 target_link_libraries(relu_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(flatten_test test/test_flatten.cpp)
+add_executable(flatten_test test/flatten_test.cpp)
 target_include_directories(flatten_test PUBLIC "./include")
 target_link_libraries(flatten_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(linear_test test/test_linear.cpp)
+add_executable(linear_test test/linear_test.cpp)
 target_include_directories(linear_test PUBLIC "./include")
 target_link_libraries(linear_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(conv_test test/test_convolution.cpp)
+add_executable(conv_test test/convolution_test.cpp)
 target_include_directories(conv_test PUBLIC "./include")
 target_link_libraries(conv_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(transposed_conv_test test/test_transposed_convolution.cpp)
+add_executable(transposed_conv_test test/transposed_convolution_test.cpp)
 target_include_directories(transposed_conv_test PUBLIC "./include")
 target_link_libraries(transposed_conv_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(softmax_test test/test_softmax.cpp)
+add_executable(softmax_test test/softmax_test.cpp)
 target_include_directories(softmax_test PUBLIC "./include")
 target_link_libraries(softmax_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(cat_test test/test_cat.cpp)
+add_executable(cat_test test/cat_test.cpp)
 target_include_directories(cat_test PUBLIC "./include")
 target_link_libraries(cat_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(openmp_test test/test_openmp.cpp)
+add_executable(openmp_test test/openmp_test.cpp)
 target_include_directories(openmp_test PUBLIC "./include")
 target_link_libraries(openmp_test PUBLIC OpenMP::OpenMP_CXX )
