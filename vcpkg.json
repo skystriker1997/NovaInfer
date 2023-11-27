@@ -1,5 +1,5 @@
 {
-  "name" : "sky-infer",
+  "name" : "nova-infer",
   "version-string" : "1.0.0",
   "builtin-baseline" : "417119555f155f6044dec7a379cd25466e339873",
   "dependencies" : [ {

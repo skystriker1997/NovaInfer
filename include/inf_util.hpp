@@ -1,5 +1,5 @@
-#ifndef SKY_INFER_UTIL
-#define SKY_INFER_UTIL
+#ifndef NOVA_INFER_UTIL
+#define NOVA_INFER_UTIL
 
 #include <string_view>
 #include <spdlog/spdlog.h>
