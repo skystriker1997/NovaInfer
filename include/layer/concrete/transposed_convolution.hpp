@@ -8,12 +8,6 @@ namespace nova_infer {
     class LayerTransposedConvolution : public Layer {
     private:
 
-        std::string name_;
-        LayerType type_;
-        Check check_;
-        std::vector<std::string> input_name_;
-        std::vector<std::string> output_name_;
-
         std::shared_ptr<Batchf> input_;
         std::shared_ptr<Batchf> output_;
 
@@ -30,11 +24,10 @@ namespace nova_infer {
         int output_padding_h_;
         int output_padding_w_;
 
-
     public:
 
         LayerTransposedConvolution(
-                std::string name,
+                std::string_view name,
                 std::vector<std::string> input_name,
                 std::vector<std::string> output_name,
                 Batchf weights,
@@ -45,9 +38,9 @@ namespace nova_infer {
                 int output_padding_h, int output_padding_w
         );
 
-        void AssignInput(std::shared_ptr<Batchf> input) override {input_ = input;};
+        void AttachInput(const std::shared_ptr<Batchf> &input) override {input_ = input;};
 
-        void AssignOutput(std::shared_ptr<Batchf> output) override {output_ = output;};
+        void AttachOutput(const std::shared_ptr<Batchf> &output) override {output_ = output;};
 
         void Forward() override;
 

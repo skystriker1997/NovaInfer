@@ -37,8 +37,8 @@ SCENARIO("test layer linear", "[layer_linear]") {
 
         LayerLinear layer(name, input_name, output_name, weights, true, bias);
 
-        layer.AssignInput(input);
-        layer.AssignOutput(output);
+        layer.AttachInput(input);
+        layer.AttachOutput(output);
 
         WHEN("execute linear") {
             layer.Forward();

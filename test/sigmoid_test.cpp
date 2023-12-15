@@ -29,8 +29,8 @@ SCENARIO("test layer sigmoid", "[layer_sigmoid]") {
         std::vector<std::string> output_name = {"example_out"};
         LayerSigmoid layer(name, input_name, output_name);
 
-        layer.AssignInput(input);
-        layer.AssignOutput(output);
+        layer.AttachInput(input);
+        layer.AttachOutput(output);
 
         WHEN("execute sigmoid") {
             layer.Forward();

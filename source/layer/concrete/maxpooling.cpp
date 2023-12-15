@@ -4,8 +4,9 @@
 namespace nova_infer {
 
 
-    LayerMaxpooling::LayerMaxpooling(std::string name,
-                                     std::vector<std::string> input_name, std::vector<std::string> output_name,
+    LayerMaxpooling::LayerMaxpooling(std::string_view name,
+                                     std::vector<std::string> input_name,
+                                     std::vector<std::string> output_name,
                                      int stride_h, int stride_w,
                                      int padding_h, int padding_w,
                                      int kernel_h, int kernel_w)
@@ -16,9 +17,9 @@ namespace nova_infer {
     check_(kernel_h>=1 && kernel_w>=1) << "failed to construct layer maxpooling; kernel should be positive integers";
 
     type_ = LayerType::MaxPooling;
-    name_ = std::move(name);
-    input_name_ = std::move(input_name);
-    output_name_ = std::move(output_name);
+    name_ = name;
+    input_names_ = std::move(input_name);
+    output_names_ = std::move(output_name);
     stride_h_ = stride_h;
     stride_w_ = stride_w;
     padding_h_ = padding_h;
@@ -34,7 +35,6 @@ namespace nova_infer {
 
         omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for
         for(int i=0; i<batch_size; i++) {
             Tensor<float> &in = input_->at(i);
             Tensor<float> &out = output_->at(i);
@@ -62,7 +62,7 @@ namespace nova_infer {
 
     std::shared_ptr<LayerMaxpooling> MakeLayerMaxpooling(pnnx::Operator *opt) {
         Check check;
-        check(opt->inputnames.size()==1) << "failed to create layer maxpooling; only accept one tensor as input";
+        check(opt->inputs.size()==1) << "failed to create layer maxpooling; only accept one tensor as input";
         check(opt->outputs.size()==1) << "failed to create layer maxpooling; only produce one tensor as output";
 
 
@@ -76,10 +76,11 @@ namespace nova_infer {
         check(kernel_size != opt->params.end()) << "failed to create layer maxpooling; cannot find parameter kernel_size";
         check(kernel_size->second.ai.size()==2) << "failed to create layer maxpooling; the parameter kernel_size should have 2 elements";
 
+        std::vector<std::string> input_name = {opt->inputs[0]->name};
         std::vector<std::string> output_name = {opt->outputs[0]->name};
 
-        return std::make_shared<LayerMaxpooling>(std::move(opt->name),
-                                                 std::move(opt->inputnames), std::move(output_name),
+        return std::make_shared<LayerMaxpooling>(opt->name,
+                                                 std::move(input_name), std::move(output_name),
                                                  stride->second.ai[0], stride->second.ai[1],
                                                  padding->second.ai[0], padding->second.ai[1],
                                                  kernel_size->second.ai[0], kernel_size->second.ai[1]);

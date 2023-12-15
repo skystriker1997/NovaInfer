@@ -7,11 +7,9 @@
 #include <memory>
 #include "inf_util.hpp"
 #include <iostream>
-
+#include <omp.h>
 
 namespace nova_infer {
-
-#define EIGEN_DONT_PARALLELIZE
 
     template<typename T>
     class Tensor {
@@ -43,24 +41,21 @@ namespace nova_infer {
 
         ~Tensor() = default;
 
-       int Channels() const ;
-       int Rows() const ;
-       int Cols() const;
+        int Channels() const;
+        int Rows() const;
+        int Cols() const;
 
-        std::vector<int>& WriteShape();
+        Tensor<T> Reshape(const std::vector<int> &shape);
+        void ReshapeInplace(const std::vector<int> &shape);
 
-        Tensor<T> Reshape(const std::vector<int>& shape);
-        void ReshapeInplace(const std::vector<int>& shape);
-
-
-        Tensor<T> Padding(const std::vector<int>& pads, T padding_value);
-        void PaddingInpalce(const std::vector<int>& pads, T padding_value);
+        Tensor<T> Padding(const std::vector<int> &pads, T padding_value);
+        void PaddingInpalce(const std::vector<int> &pads, T padding_value);
 
         T Max();
         T Min();
 
         Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> ReadMatrix(int n);
-        Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> WriteMatrix(int n);
+        Eigen::Ref<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> WriteMatrix(int n);
 
 
         Tensor<T> operator+(const Tensor<T> &rhs);
@@ -74,8 +69,11 @@ namespace nova_infer {
     };
 
 
+    using Batchf = std::vector<Tensor<float>>;
+
+
     template<typename T>
-    void Swap(Tensor<T>& lhs, Tensor<T>& rhs) noexcept {
+    void Swap(Tensor<T> &lhs, Tensor<T> &rhs) noexcept {
         lhs.Swap(rhs);
     }
 
@@ -88,23 +86,22 @@ namespace nova_infer {
 
         check_(!shape.empty() && shape.size() <= 3) << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
 
-        for (int i: shape)
+        for(int i: shape) {
             check_(i > 0) << "failed to construct tensor; any dimension cannot be less than 1";
+        }
 
-        if (shape.size() == 1) {
+        if(shape.size() == 1) {
             shape_[0] = 1;
             shape_[1] = 1;
             shape_[2] = shape[0];
-        } else if (shape.size() == 2) {
+        } else if(shape.size() == 2) {
             shape_[0] = 1;
             shape_[1] = shape[0];
             shape_[2] = shape[1];
         } else {
             shape_ = shape;
         }
-        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data(shape_[0],
-                                                                           Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>(
-                                                                                   shape_[1], shape_[2]));
+        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data(shape_[0], Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>(shape_[1], shape_[2]));
         data_ = std::move(data);
     }
 
@@ -114,24 +111,22 @@ namespace nova_infer {
     Tensor<T>::Tensor(const std::vector<int> &shape, T value) {
         shape_.resize(3);
         check_(!shape.empty() && shape.size() <= 3)
-                        << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
-        for (int i: shape) {
+        << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
+        for(int i: shape) {
             check_(i > 0) << "failed to construct tensor; any dimension cannot be less than 1";
         }
-        if (shape.size() == 1) {
+        if(shape.size() == 1) {
             shape_[0] = 1;
             shape_[1] = 1;
             shape_[2] = shape[0];
-        } else if (shape.size() == 2) {
+        } else if(shape.size() == 2) {
             shape_[0] = 1;
             shape_[1] = shape[0];
             shape_[2] = shape[1];
         } else {
             shape_ = shape;
         }
-        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data(shape_[0],
-                                                                           Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>::Constant(
-                                                                                   shape_[1], shape_[2], value));
+        std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> data(shape_[0], Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>::Constant(shape_[1], shape_[2], value));
         data_ = std::move(data);
     }
 
@@ -140,20 +135,20 @@ namespace nova_infer {
     Tensor<T>::Tensor(const std::vector<int> &shape, const std::vector<T> &data) {
         shape_.resize(3);
         check_(!shape.empty() && shape.size() <= 3)
-                        << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
+        << "failed to construct tensor; number of dimension is " + std::to_string(shape.size());
 
         int i = 1;
-        for (int j: shape) {
+        for(int j: shape) {
             check_(j > 0) << "failed to construct tensor; any dimension cannot be less than 1";
             i *= j;
         }
         check_(i == data.size()) << "failed to construct tensor; size of tensor does not match with shape";
 
-        if (shape.size() == 1) {
+        if(shape.size() == 1) {
             shape_[0] = 1;
             shape_[1] = 1;
             shape_[2] = shape[0];
-        } else if (shape.size() == 2) {
+        } else if(shape.size() == 2) {
             shape_[0] = 1;
             shape_[1] = shape[0];
             shape_[2] = shape[1];
@@ -161,12 +156,13 @@ namespace nova_infer {
             shape_ = shape;
         }
 
-
         data_.resize(shape_[0]);
-        for (int k = 0; k < shape_[0]; k++) {
+        for(int k = 0; k < shape_[0]; k++) {
             data_[k] = Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
                     std::vector<T>(data.begin() + k * shape_[1] * shape_[2],
-                                   data.begin() + (k + 1) * shape_[1] * shape_[2]).data(), shape_[1], shape_[2]);
+                                   data.begin() + (k + 1) * shape_[1] * shape_[2]).data(),
+                                   shape_[1],
+                                   shape_[2]);
         }
 
     }
@@ -212,7 +208,7 @@ namespace nova_infer {
 
 
     template<typename T>
-    Eigen::Ref<const Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Tensor<T>::ReadMatrix(int n) {
+    Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Tensor<T>::ReadMatrix(int n) {
         check_(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
         return data_[n];
     };
@@ -220,11 +216,10 @@ namespace nova_infer {
 
 
     template<typename T>
-    Eigen::Ref<Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Tensor<T>::WriteMatrix(int n) {
+    Eigen::Ref<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> Tensor<T>::WriteMatrix(int n) {
         check_(n >= 0 && n < shape_[0]) << "failed to access target channel; index out of range";
         return data_[n];
     };
-
 
 
 
@@ -250,13 +245,6 @@ namespace nova_infer {
 
 
     template<typename T>
-    std::vector<int> &Tensor<T>::WriteShape() {
-        return shape_;
-    }
-
-
-
-    template<typename T>
     Tensor<T> Tensor<T>::operator+(const Tensor<T> &rhs) {
         bool normal = shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2];
 
@@ -268,31 +256,32 @@ namespace nova_infer {
         bool right_broadcast_along_row = false;
         bool right_broadcast_along_col = false;
 
-        if (!normal) {
-            if (shape_[0] == 1 && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
+        if(!normal) {
+            if(shape_[0] == 1 && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
                 left_broadcast_along_channel = true;
-            else if (rhs.shape_[0] == 1 && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
+            else if(rhs.shape_[0] == 1 && shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
                 right_broadcast_along_channel = true;
-            else if (shape_[0] == rhs.shape_[0] && shape_[1] == 1 && shape_[2] == rhs.shape_[2])
+            else if(shape_[0] == rhs.shape_[0] && shape_[1] == 1 && shape_[2] == rhs.shape_[2])
                 left_broadcast_along_row = true;
-            else if (shape_[0] == rhs.shape_[0] && rhs.shape_[1] == 1 && shape_[2] == rhs.shape_[2])
+            else if(shape_[0] == rhs.shape_[0] && rhs.shape_[1] == 1 && shape_[2] == rhs.shape_[2])
                 right_broadcast_along_row = true;
-            else if (shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && shape_[2] == 1)
+            else if(shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && shape_[2] == 1)
                 left_broadcast_along_col = true;
-            else if (shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && rhs.shape_[2] == 1)
+            else if(shape_[0] == rhs.shape_[0] && shape_[1] == rhs.shape_[1] && rhs.shape_[2] == 1)
                 right_broadcast_along_col = true;
             else
                 check_(false) << "failed to add tensors; mismatching of dimensions";
         }
 
-
-        if (!normal) {
-            if (left_broadcast_along_channel || left_broadcast_along_col || left_broadcast_along_row)
+        if(!normal) {
+            if(left_broadcast_along_channel || left_broadcast_along_col || left_broadcast_along_row) {
                 check_(!right_broadcast_along_row && !right_broadcast_along_col && !right_broadcast_along_channel)
-                                << "failed to add tensors; at most one tensor can broadcast";
-            if (right_broadcast_along_row || right_broadcast_along_col || right_broadcast_along_channel)
+                << "failed to add tensors; at most one tensor can broadcast";
+            }
+            if(right_broadcast_along_row || right_broadcast_along_col || right_broadcast_along_channel) {
                 check_(!left_broadcast_along_channel && !left_broadcast_along_col && !left_broadcast_along_row)
-                                << "failed to add tensors; at most one tensor can broadcast";
+                << "failed to add tensors; at most one tensor can broadcast";
+            }
         }
 
         int max_channel = shape_[0] > rhs.shape_[0] ? shape_[0] : rhs.shape_[0];
@@ -302,50 +291,50 @@ namespace nova_infer {
         Tensor<T> output(std::vector<int>{max_channel, max_row, max_col});
 
 
-        if (normal) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        if(normal) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[i] + rhs.data_[i];
-        } else if (left_broadcast_along_row && left_broadcast_along_col && left_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(left_broadcast_along_row && left_broadcast_along_col && left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[0](0, 0) + rhs.data_[i].array();
-        } else if (left_broadcast_along_row && left_broadcast_along_col && !left_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(left_broadcast_along_row && left_broadcast_along_col && !left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[i](0, 0) + rhs.data_[i].array();
-        } else if (left_broadcast_along_row && !left_broadcast_along_col && left_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(left_broadcast_along_row && !left_broadcast_along_col && left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = rhs.data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[0]).transpose();
-        } else if (!left_broadcast_along_row && left_broadcast_along_col && left_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(!left_broadcast_along_row && left_broadcast_along_col && left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = rhs.data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[0]);
-        } else if (left_broadcast_along_row && !left_broadcast_along_col && !left_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(left_broadcast_along_row && !left_broadcast_along_col && !left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = rhs.data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[i]).transpose();
-        } else if (!left_broadcast_along_row && left_broadcast_along_col && !left_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(!left_broadcast_along_row && left_broadcast_along_col && !left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = rhs.data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(data_[i]);
-        } else if (!left_broadcast_along_row && !left_broadcast_along_col && left_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(!left_broadcast_along_row && !left_broadcast_along_col && left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[0] + rhs.data_[i];
-        } else if (right_broadcast_along_row && right_broadcast_along_col && right_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(right_broadcast_along_row && right_broadcast_along_col && right_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = rhs.data_[0](0, 0) + data_[i].array();
-        } else if (right_broadcast_along_row && right_broadcast_along_col && !right_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(right_broadcast_along_row && right_broadcast_along_col && !right_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = rhs.data_[i](0, 0) + data_[i].array();
-        } else if (right_broadcast_along_row && !right_broadcast_along_col && right_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(right_broadcast_along_row && !right_broadcast_along_col && right_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[0]).transpose();
-        } else if (!right_broadcast_along_row && right_broadcast_along_col && right_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(!right_broadcast_along_row && right_broadcast_along_col && right_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[0]);
-        } else if (right_broadcast_along_row && !right_broadcast_along_col && !right_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(right_broadcast_along_row && !right_broadcast_along_col && !right_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[i].rowwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[i]).transpose();
-        } else if (!right_broadcast_along_row && right_broadcast_along_col && !right_broadcast_along_channel) {
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(!right_broadcast_along_row && right_broadcast_along_col && !right_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = data_[i].colwise() + Eigen::Vector<T, Eigen::Dynamic>(rhs.data_[i]);
         } else {
-            for (int i = 0; i < output.shape_[0]; i++)
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[i] = rhs.data_[0] + data_[i];
         }
         return output;
@@ -355,15 +344,15 @@ namespace nova_infer {
     template<typename T>
     Tensor<T> Tensor<T>::operator*(const Tensor<T> &rhs) {
         check_(shape_[2] == rhs.shape_[1])
-                        << "failed to matrix-wisely multiply tensors; left matrix col num not matching with row num of right one";
+        << "failed to matrix-wisely multiply tensors; left matrix col num not matching with row num of right one";
 
         bool normal = shape_[0] == rhs.shape_[0];
         bool left_broadcast_along_channel = false;
         bool right_broadcast_along_channel = false;
-        if (!normal) {
-            if (shape_[0] == 1)
+        if(!normal) {
+            if(shape_[0] == 1)
                 left_broadcast_along_channel = true;
-            else if (rhs.shape_[0] == 1)
+            else if(rhs.shape_[0] == 1)
                 right_broadcast_along_channel = true;
             else
                 check_(false) << "failed to matrix-wisely multiply tensors; mismatching channels";
@@ -374,14 +363,14 @@ namespace nova_infer {
         Tensor<T> output(std::vector<int>{output_channels, shape_[1], rhs.shape_[2]});
 
         output.data_[0].setZero();
-        if (normal) {
-            for (int i = 0; i < output_channels; i++)
+        if(normal) {
+            for(int i = 0; i < output_channels; i++)
                 output.data_[i] = data_[i] * rhs.data_[i];
-        } else if (left_broadcast_along_channel) {
-            for (int i = 0; i < output_channels; i++)
+        } else if(left_broadcast_along_channel) {
+            for(int i = 0; i < output_channels; i++)
                 output.data_[i] = data_[0] * rhs.data_[i];
         } else {
-            for (int i = 0; i < output_channels; i++)
+            for(int i = 0; i < output_channels; i++)
                 output.data_[i] = data_[i] * rhs.data_[0];
         }
         return output;
@@ -391,7 +380,7 @@ namespace nova_infer {
     template<typename T>
     Tensor<T> Tensor<T>::operator%(const Tensor<T> &rhs) {
         check_(shape_[1] == rhs.shape_[1] && shape_[2] == rhs.shape_[2])
-                        << "failed to coef-wisely multiply tensors; mismatching shapes";
+        << "failed to coef-wisely multiply tensors; mismatching shapes";
 
         bool normal = shape_[0] == rhs.shape_[0];
 
@@ -399,19 +388,20 @@ namespace nova_infer {
         bool right_broadcast_along_channel = shape_[0] != rhs.shape_[0] && rhs.shape_[0] == 1;
 
         check_(normal || left_broadcast_along_channel || right_broadcast_along_channel)
-                        << "failed to coef-wisely multiply tensors; mismatching shapes";
+        << "failed to coef-wisely multiply tensors; mismatching shapes";
 
         Tensor<T> output(std::vector<int>{1, shape_[1], shape_[2]});
 
-        if (normal)
-            for (int i = 0; i < output.shape_[0]; i++)
+        if(normal) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[0].array() += data_[i].array() * rhs.data_[i].array();
-        else if (left_broadcast_along_channel)
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else if(left_broadcast_along_channel) {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[0].array() += data_[0].array() * rhs.data_[i].array();
-        else
-            for (int i = 0; i < output.shape_[0]; i++)
+        } else {
+            for(int i = 0; i < output.shape_[0]; i++)
                 output.data_[0].array() += data_[i].array() * rhs.data_[0].array();
+        }
 
         return output;
     }
@@ -489,14 +479,13 @@ namespace nova_infer {
         check_(shape_to[0]>0 && shape_to[1]>0 && shape_to[2]>0) << "failed to reshape; any dimension cannot be less than 1";
         check_(shape_to[0]*shape_to[1]*shape_to[2] == shape_[0]*shape_[1]*shape_[2]) << "failed to reshape; mismatching with number of elements";
 
-
         if(shape_to[0] != shape_[0]) {
             Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> flat(1,  shape_[0] * shape_[1] * shape_[2]);
-            for (int i = 0; i < shape_[0]; i++) {
+            for(int i = 0; i < shape_[0]; i++) {
                 flat.block(0, shape_[1] * shape_[2] * i, 1, shape_[1] * shape_[2]) = data_[i].template reshaped<Eigen::RowMajor>(1, shape_[1] * shape_[2]);
             }
             std::vector<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> tmp_data(shape_to[0]);
-            for (int j = 0; j < shape_to[0]; j++) {
+            for(int j = 0; j < shape_to[0]; j++) {
                 tmp_data[j] = flat.block(0, shape_to[1] * shape_to[2] * j, 1, shape_to[1] * shape_to[2]).template reshaped<Eigen::RowMajor>(
                         shape_to[1], shape_to[2]);
             }
@@ -530,15 +519,14 @@ namespace nova_infer {
 
         if(shape_to[0] != shape_[0]) {
             Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> flat(1,  shape_[0] * shape_[1] * shape_[2]);
-            for (int i = 0; i < shape_[0]; i++) {
+            for(int i = 0; i < shape_[0]; i++) {
                 flat.block(0, shape_[1] * shape_[2] * i, 1, shape_[1] * shape_[2]) = data_[i].template reshaped<Eigen::RowMajor>(1, shape_[1] * shape_[2]);
             }
-            for (int j = 0; j < shape_to[0]; j++) {
-                tmp_data[j] = flat.block(0, shape_to[1] * shape_to[2] * j, 1, shape_to[1] * shape_to[2]).template reshaped<Eigen::RowMajor>(
-                        shape_to[1], shape_to[2]);
+            for(int j = 0; j < shape_to[0]; j++) {
+                tmp_data[j] = flat.block(0, shape_to[1] * shape_to[2] * j, 1, shape_to[1] * shape_to[2]).template reshaped<Eigen::RowMajor>(shape_to[1], shape_to[2]);
             }
         } else {
-            for (int k = 0; k < shape_to[0]; k++) {
+            for(int k = 0; k < shape_to[0]; k++) {
                 tmp_data[k] = data_[k].template reshaped<Eigen::RowMajor>(shape_to[1], shape_to[2]);
             }
         }
@@ -563,7 +551,6 @@ namespace nova_infer {
 
 
 
-    using Batchf = std::vector<Tensor<float>>;
 
 
 }

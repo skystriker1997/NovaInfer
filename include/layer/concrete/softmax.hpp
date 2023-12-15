@@ -8,12 +8,6 @@ namespace nova_infer {
     class LayerSoftmax: public Layer {
     private:
 
-        std::string name_;
-        LayerType type_;
-        Check check_;
-        std::vector<std::string> input_name_;
-        std::vector<std::string> output_name_;
-
         std::shared_ptr<Batchf> input_;
         std::shared_ptr<Batchf> output_;
 
@@ -22,11 +16,11 @@ namespace nova_infer {
 
     public:
 
-        LayerSoftmax(std::string name, std::vector<std::string> input_name, std::vector<std::string> output_name, int dim);
+        LayerSoftmax(std::string_view name, std::vector<std::string> input_name, std::vector<std::string> output_name, int dim);
 
-        void AssignInput(std::shared_ptr<Batchf> input) override {input_ = input;};
+        void AttachInput(const std::shared_ptr<Batchf> &input) override {input_ = input;};
 
-        void AssignOutput(std::shared_ptr<Batchf> output) override {output_ = output;};
+        void AttachOutput(const std::shared_ptr<Batchf> &output) override {output_ = output;};
 
         void Forward() override;
 

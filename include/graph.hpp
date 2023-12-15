@@ -10,6 +10,8 @@
 #include "layer/concrete/linear.hpp"
 #include "layer/concrete/flatten.hpp"
 #include "layer/concrete/sigmoid.hpp"
+#include "layer/concrete/cat.hpp"
+#include "layer/concrete/softmax.hpp"
 
 
 #include <queue>
@@ -30,13 +32,15 @@ namespace nova_infer {
 
         std::map<std::string, std::shared_ptr<Layer>> layers_;
 
-        std::map<std::string, std::vector<int>> data_node_shape_;
-        std::map<std::string, std::shared_ptr<Batchf>> data_nodes_;
+        std::map<std::string, std::vector<int>> tensor_shape_;
+
+        std::map<std::string, std::shared_ptr<Batchf>> tensors_;
 
         std::vector< std::shared_ptr<Layer>> topo_sorted_layers_;
 
-        std::string initial_data_;
-        std::string final_output_;
+        std::string input_tensor_;
+
+        std::string output_tensor_;
 
         std::shared_ptr<Layer> CreateLayer(pnnx::Operator *opt);
 
@@ -48,11 +52,13 @@ namespace nova_infer {
 
 
     public:
-        Graph(const std::string &param_path, const std::string &bin_path);
+        Graph(std::string_view param_path, std::string_view bin_path);
 
         ~Graph() = default;
 
-        void AppendInput(const Tensor<float> &input);
+        void AppendBatch(const Tensor<float> &input);
+
+        std::shared_ptr<Batchf> GetOutput();
 
         void Forward();
 

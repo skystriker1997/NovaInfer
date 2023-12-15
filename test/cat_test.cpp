@@ -38,8 +38,9 @@ SCENARIO("test layer cat", "[layer_cat]") {
 
         LayerCat layer(name, input_name, output_name, dim);
 
-        layer.AssignInput({input1, input2});
-        layer.AssignOutput(output);
+        layer.AttachInput(input1);
+        layer.AttachInput(input2);
+        layer.AttachOutput(output);
 
         WHEN("execute cat") {
             layer.Forward();

@@ -15,7 +15,7 @@ namespace nova_infer {
 
 
     class Layer {
-    private:
+    protected:
         std::string name_;
         LayerType type_;
         Check check_;
@@ -32,9 +32,9 @@ namespace nova_infer {
 
         LayerType GetType() {return type_;};
 
-        virtual void AssignInput(std::shared_ptr<Batchf> input) {};
+        virtual void AttachInput(const std::shared_ptr<Batchf> &input) {};
 
-        virtual void AssignOutput(std::shared_ptr<Batchf> output) {};
+        virtual void AttachOutput(const std::shared_ptr<Batchf> &output) {};
 
         virtual void Forward() {};
 

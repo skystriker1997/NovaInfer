@@ -28,8 +28,8 @@ SCENARIO("test layer relu", "[layer_relu]") {
         std::vector<std::string> output_name = {"example_out"};
         LayerReLU layer(name, input_name, output_name);
 
-        layer.AssignInput(input);
-        layer.AssignOutput(output);
+        layer.AttachInput(input);
+        layer.AttachOutput(output);
 
         WHEN("execute relu") {
             layer.Forward();

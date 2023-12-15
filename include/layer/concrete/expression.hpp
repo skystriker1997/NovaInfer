@@ -9,11 +9,6 @@ namespace nova_infer {
 
     class LayerExpression: public Layer {
     private:
-        std::string name_;
-        LayerType type_;
-        Check check_;
-        std::vector<std::string> input_names_;
-        std::vector<std::string> output_name_;
 
         std::vector<std::shared_ptr<Batchf>> inputs_;
         std::shared_ptr<Batchf> output_;
@@ -25,13 +20,14 @@ namespace nova_infer {
 
 
     public:
-        LayerExpression(std::string name,
-                        std::vector<std::string> input_names, std::vector<std::string> output_name,
-                        std::string expression);
+        LayerExpression(std::string_view name,
+                        std::vector<std::string> input_names,
+                        std::vector<std::string> output_name,
+                        std::string_view expression);
 
-        void AssignInputs(std::vector<std::shared_ptr<Batchf>> inputs) {inputs_ = inputs;};
+        void AttachInput(const std::shared_ptr<Batchf> &input) override {inputs_.emplace_back(input);};
 
-        void AssignOutput(std::shared_ptr<Batchf> output) override {output_ = output;};
+        void AttachOutput(const std::shared_ptr<Batchf> &output) override {output_ = output;};
 
         void Forward() override;
 

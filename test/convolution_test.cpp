@@ -44,8 +44,8 @@ SCENARIO("test layer convolution", "[layer_convolution]") {
 
         LayerConvolution layer(name, input_name, output_name, weights, true, bias, padding_h, padding_w, stride_h, stride_w, groups);
 
-        layer.AssignInput(input);
-        layer.AssignOutput(output);
+        layer.AttachInput(input);
+        layer.AttachOutput(output);
 
         WHEN("execute convolution") {
             layer.Forward();

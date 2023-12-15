@@ -46,8 +46,8 @@ SCENARIO("test layer transposed convolution", "[layer_transposed_convolution]") 
 
         LayerTransposedConvolution layer(name, input_name, output_name, weights, true, bias, padding_h, padding_w, stride_h, stride_w, groups, output_padding_h, output_padding_w);
 
-        layer.AssignInput(input);
-        layer.AssignOutput(output);
+        layer.AttachInput(input);
+        layer.AttachOutput(output);
 
         WHEN("execute transposed convolution") {
             layer.Forward();

@@ -1,9 +1,8 @@
 #include "layer/concrete/convolution.hpp"
 
 namespace nova_infer {
-    LayerConvolution::LayerConvolution(std::string name,
+    LayerConvolution::LayerConvolution(std::string_view name,
                                        std::vector<std::string> input_name, std::vector<std::string> output_name,
-                                    //   std::shared_ptr<Batchf> input, std::shared_ptr<Batchf> output,
                                        Batchf weights,
                                        bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf> bias,
                                        int padding_h, int padding_w,
@@ -16,9 +15,9 @@ namespace nova_infer {
         check_(stride_h>=1 && stride_w>=1) << "failed to construct layer convolution; stride should be positive integers";
 
         type_ = LayerType::Conv;
-        name_ = std::move(name);
-        input_name_ = std::move(input_name);
-        output_name_ = std::move(output_name);
+        name_ = name;
+        input_names_ = std::move(input_name);
+        output_names_ = std::move(output_name);
         weights_ = std::move(weights);
         bias_ = bias;
         groups_ = groups;
@@ -28,6 +27,7 @@ namespace nova_infer {
         stride_h_ = stride_h;
         stride_w_ = stride_w;
     };
+
 
 
     void LayerConvolution::Forward() {
@@ -43,7 +43,6 @@ namespace nova_infer {
 
         omp_set_num_threads(omp_get_num_procs());
 
-    #pragma omp parallel
         for(int t=0; t<batch_size; t++) {
             Tensor<float> &in = input_->at(t);
             Tensor<float> &out = output_->at(t);
@@ -116,7 +115,7 @@ namespace nova_infer {
     std::shared_ptr<LayerConvolution> MakeLayerConvolution(pnnx::Operator *opt) {
         Check check;
 
-        check(opt->inputnames.size()==1) << "failed to create layer convolution; only accept one tensor as input";
+        check(opt->inputs.size()==1) << "failed to create layer convolution; only accept one tensor as input";
         check(opt->outputs.size()==1) << "failed to create layer convolution; only produce one tensor as output";
 
         auto groups = opt->params.find("groups");
@@ -159,7 +158,6 @@ namespace nova_infer {
         check(channels_input % num_groups == 0) << "failed to create layer convolution; number of channels in input tensor should be divisible by number of groups";
         int kernel_c = channels_input / num_groups;
 
-
         int kernel_h = kernel_size->second.ai[0];
         int kernel_w = kernel_size->second.ai[1];
 
@@ -173,8 +171,7 @@ namespace nova_infer {
         int non_empty_h = dilation_h > 1 ? (kernel_h+dilation_h-1)/dilation_h : kernel_h;
         int non_empty_w = dilation_w > 1 ? (kernel_w+dilation_w-1)/dilation_w : kernel_w;
 
-
-        auto convert_to_float = [](std::vector<char>& attr_val, Check& check){
+        auto convert_to_float = [](std::vector<char> &attr_val, Check &check){
             std::vector<float> vect_float;
             auto float_size = sizeof(float);
             check(attr_val.size() % float_size == 0) << "failed to convert char arr to float arr; total bytes should be divisible by size of a float";
@@ -200,14 +197,14 @@ namespace nova_infer {
         for(int g=0; g<num_groups; g++) {
             std::vector<float> sub_weights = {weights_converted.begin()+g*kernel_cnhw, weights_converted.begin()+(g+1)*kernel_cnhw};
             for(int n=0; n<kernels_per_group; n++) {
-                int offset_wrt_kernel = n*kernel_hw;
+                int offset_wrt_kernel = n*kernel_hw;   // offset with respect to kernel
                 for(int c=0; c<kernel_c; c++) {
                     int offset_wrt_channel = c*kernel_nhw;
-                    for(int h=0; h<kernel_h; h++) {
-                        int offset_wrt_height = h*kernel_c;
-                        for(int w=0; w<kernel_c; w++) {
-                            int h_index = (h+1)*dilation_h-1;
-                            int w_index = (w+1)*dilation_w-1;
+                    for(int h=0; h<non_empty_h; h++) {
+                        int offset_wrt_height = h*non_empty_w;
+                        for(int w=0; w<non_empty_w; w++) {
+                            int h_index = h*dilation_h;
+                            int w_index = w*dilation_w;
                             weights_f[kernels_per_group*g+n].WriteMatrix(c)(h_index, w_index) = sub_weights[offset_wrt_channel+offset_wrt_kernel+offset_wrt_height+w];
                         }
                     }
@@ -226,17 +223,16 @@ namespace nova_infer {
             bias_f = Eigen::Map<Eigen::RowVectorXf>(bias_farr.data(), bias_farr.size());
         }
 
+        std::vector<std::string> input_name = {opt->inputs[0]->name};
         std::vector<std::string> output_name = {opt->outputs[0]->name};
 
-        return std::make_shared<LayerConvolution>(std::move(opt->name),
-                                                  std::move(opt->inputnames), std::move(output_name),
+        return std::make_shared<LayerConvolution>(opt->name,
+                                                  std::move(input_name), std::move(output_name),
                                                   std::move(weights_f),
                                                   use_bias->second.b, bias_f,
                                                   padding->second.ai[0],padding->second.ai[1],
                                                   stride->second.ai[0], stride->second.ai[1],
                                                   groups->second.i);
-
-
     };
 
 

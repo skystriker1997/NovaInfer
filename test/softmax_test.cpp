@@ -32,8 +32,8 @@ SCENARIO("test layer softmax", "[layer_softmax]") {
 
         LayerSoftmax layer(name, input_name, output_name, target_dim);
 
-        layer.AssignInput(input);
-        layer.AssignOutput(output);
+        layer.AttachInput(input);
+        layer.AttachOutput(output);
 
         WHEN("execute softmax") {
             layer.Forward();

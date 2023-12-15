@@ -2,28 +2,28 @@
 
 
 namespace nova_infer {
-    LayerCat::LayerCat(std::string name, std::vector<std::string> input_names, std::vector<std::string> output_name,
-                       int dim) {
+    LayerCat::LayerCat(std::string_view name, std::vector<std::string> input_names, std::vector<std::string> output_name, int dim) {
         type_ = LayerType::Cat;
-        name_ = std::move(name);
+        name_ = name;
         input_names_ = std::move(input_names);
-        output_name_ = std::move(output_name);
+        output_names_ = std::move(output_name);
         dim_ = dim;
     }
 
 
-    void LayerCat::Forward() {
-        int batch_size = inputs_[0]->size();
 
+    void LayerCat::Forward() {
+
+        int batch_size = inputs_[0]->size();
 
         for(auto &batch: inputs_) {
             check_(batch->size() == batch_size) << "failed to execute layer cat; all batches should have same batch size";
         }
+
         check_(batch_size == output_->size()) << "failed to execute layer cat; the output should have same batch size with the input";
 
-        check_(dim_==1 || dim_==-3) << "failed to execute layer cat; only support the concatenation along channel";
+        check_(dim_==1 || dim_==-3) << "failed to execute layer cat; only support the concatenation along the channel";
 
-#pragma omp parallel for
         for(int t=0; t<output_->size(); t++) {
             Tensor<float> &out = output_->at(t);
             int channels = out.Channels();
@@ -50,14 +50,21 @@ namespace nova_infer {
     std::shared_ptr<LayerCat> MakeLayerCat(pnnx::Operator *opt) {
         Check check;
 
+        check(!opt->inputs.empty()) << "failed to create layer cat; need at least one tensor as input";
         check(opt->outputs.size() == 1) << "failed to create layer cat; only produce one tensor as output";
+
+        int n = opt->inputs.size();
+        std::vector<std::string> input_names(n);
+        for(int i=0; i<n; i++) {
+            input_names[i] = opt->inputs[i]->name;
+        }
 
         std::vector<std::string> output_name = {opt->outputs[0]->name};
 
         auto dim = opt->params.find("dim");
         check(dim != opt->params.end()) << "failed to create layer cat; cannot find parameter dim";
 
-        return std::make_shared<LayerCat>(std::move(opt->name), std::move(opt->inputnames), std::move(output_name), dim->second.i);
+        return std::make_shared<LayerCat>(opt->name, std::move(input_names), std::move(output_name), dim->second.i);
     };
 
 }

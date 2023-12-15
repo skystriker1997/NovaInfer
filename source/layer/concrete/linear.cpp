@@ -2,15 +2,17 @@
 
 
 namespace nova_infer {
-    LayerLinear::LayerLinear(std::string name,
-                             std::vector<std::string> input_name, std::vector<std::string> output_name,
+    LayerLinear::LayerLinear(std::string_view name,
+                             std::vector<std::string> input_name,
+                             std::vector<std::string> output_name,
                              const Eigen::Ref<const Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>> weights,
-                             bool use_bias, const Eigen::Ref<const Eigen::RowVectorXf> bias)
+                             bool use_bias,
+                             const Eigen::Ref<const Eigen::RowVectorXf> bias)
     {
         type_ = LayerType::Linear;
-        name_ = std::move(name);
-        input_name_ = std::move(input_name);
-        output_name_ = std::move(output_name);
+        name_ = name;
+        input_names_ = std::move(input_name);
+        output_names_ = std::move(output_name);
         weights_ = weights;
         use_bias_ = use_bias;
         bias_ = bias;
@@ -24,7 +26,6 @@ namespace nova_infer {
         if(use_bias_) {
             omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for
             for(int i=0; i<input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -43,7 +44,6 @@ namespace nova_infer {
         } else {
             omp_set_num_threads(omp_get_num_procs());
 
-#pragma omp parallel for
             for(int i=0; i<input_->size(); i++) {
                 Tensor<float> &in = input_->at(i);
                 Tensor<float> &out = output_->at(i);
@@ -63,14 +63,14 @@ namespace nova_infer {
 
     std::shared_ptr<LayerLinear> MakeLayerLinear(pnnx::Operator *opt) {
         Check check;
-        check(opt->inputnames.size()==1) << "failed to create layer linear; only accept one tensor as input";
+        check(opt->inputs.size()==1) << "failed to create layer linear; only accept one tensor as input";
         check(opt->outputs.size()==1) << "failed to create layer linear; only produce one tensor as output";
 
         auto use_bias = opt->params.find("bias");
         check(use_bias != opt->params.end()) << "failed to create linear layer; cannot find parameter bias";
         Eigen::RowVectorXf bias_f;
 
-        auto convert_to_float = [](std::vector<char>& attr_val, Check& check){
+        auto convert_to_float = [](std::vector<char> &attr_val, Check &check){
             std::vector<float> vect_float;
             auto float_size = sizeof(float);
             check(attr_val.size() % float_size == 0) << "failed to convert char arr to float arr; total bytes cannot be divided by size of a float";
@@ -96,17 +96,19 @@ namespace nova_infer {
         std::vector<int>& shape = weights->second.shape;
         check(!shape.empty()) << "failed to create linear layer; weights should be 2-dimensional";
         if(shape.size()>2) {
-            for(int i=0; i<shape.size()-2; i++)
+            for(int i=0; i<shape.size()-2; i++) {
                 check(shape[i]==1) << "failed to create linear layer; weights should be 2-dimensional";
+            }
         }
         int cols = shape.back();
         int rows = shape.size()==1?1:shape[shape.size()-2];
 
         Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> weights_f = Eigen::Map<Eigen::Matrix <float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(convert_to_float(weights->second.data, check).data(), rows, cols);
 
+        std::vector<std::string> input_name = {opt->inputs[0]->name};
         std::vector<std::string> output_name = {opt->outputs[0]->name};
 
-        return std::make_shared<LayerLinear>(std::move(opt->name), std::move(opt->inputnames), std::move(output_name), weights_f, use_bias->second.b, bias_f);
+        return std::make_shared<LayerLinear>(opt->name, std::move(input_name), std::move(output_name), weights_f, use_bias->second.b, bias_f);
     };
 
 }

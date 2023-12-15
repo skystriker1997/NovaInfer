@@ -33,8 +33,8 @@ SCENARIO("test layer flatten", "[layer_flatten]") {
 
         LayerFlatten layer(name, input_name, output_name, flatten_start_dim, flatten_end_dim);
 
-        layer.AssignInput(input);
-        layer.AssignOutput(output);
+        layer.AttachInput(input);
+        layer.AttachOutput(output);
 
         WHEN("execute flatten") {
             layer.Forward();
