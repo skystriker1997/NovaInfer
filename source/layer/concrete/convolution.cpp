@@ -166,7 +166,7 @@ namespace nova_infer {
 
         std::vector<int> tensor_shape = {kernel_c, kernel_h, kernel_w};
 
-        Batchf weights_f(kernels, Tensor<float>(tensor_shape));
+        Batchf weights_f(kernels, Tensor<float>(tensor_shape, 0));
 
         int non_empty_h = dilation_h > 1 ? (kernel_h+dilation_h-1)/dilation_h : kernel_h;
         int non_empty_w = dilation_w > 1 ? (kernel_w+dilation_w-1)/dilation_w : kernel_w;
