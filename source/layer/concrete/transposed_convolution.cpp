@@ -59,6 +59,8 @@ namespace nova_infer {
             check_(out.Rows() == output_height) << "failed to execute layer transposed convolution; incorrect row number of output";
             check_(out.Cols() == output_width) << "failed to execute layer transposed convolution; incorrect col number of output";
 
+            out.SetZero();
+
             int kernels_per_group = kernels / groups_;
 
             Tensor<float> tmp = out.Padding({padding_h_, padding_w_, padding_h_, padding_w_}, 0);
