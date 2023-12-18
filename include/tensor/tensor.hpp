@@ -51,6 +51,8 @@ namespace nova_infer {
         Tensor<T> Padding(const std::vector<int> &pads, T padding_value);
         void PaddingInpalce(const std::vector<int> &pads, T padding_value);
 
+        void SetZero();
+
         T Max();
         T Min();
 
@@ -404,6 +406,13 @@ namespace nova_infer {
         }
 
         return output;
+    }
+
+
+    template<typename T>
+    void Tensor<T>::SetZero() {
+        for(auto &mtx: data_)
+            mtx.setZero();
     }
 
 
