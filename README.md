@@ -4,7 +4,7 @@
 
 ## Overview
 
-Written by C++, Novainfer is a deep learning inference framework in development. I name it by nova becasue I have been holding a high hope to improve it step by step as I am making progress in the area of deep learning. My aim is to make it be able to deploy most models and support CUDA acceleration.
+Written by C++, Novainfer is a deep learning inference framework in development. I name it by nova becasue I have been holding a high hope to improve it step by step as I am making progress in the area of deep learning. My aim is to make it be able to deploy most of models and support CUDA acceleration.
 
 ## Development environment and libraries used
 
@@ -17,11 +17,11 @@ Written by C++, Novainfer is a deep learning inference framework in development.
 
 ## Demo
 
-### Unet
+### U-Net
 
 🥳 **_update_**
 
-I am working to make NovaInfer perfectly support unet. The test case is displayed below, so I am trying to solve the issue under the hood 🧐
+I am working to make NovaInfer perfectly support U-Net. The test case is displayed below, so I am trying to solve the issue under the hood 🧐
 
  <img src="./images/unet_car_input.png" style="zoom:67%;" /> 
 
