@@ -1,8 +1,11 @@
 #ifndef NOVA_INFER_TENSOR
 #define NOVA_INFER_TENSOR
 
+#ifndef EIGEN_USE_MKL_ALL
+#define EIGEN_USE_MKL_ALL
+#endif
 
-#include <Eigen/Eigen>
+#include <eigen3/Eigen/Eigen>
 #include <vector>
 #include <memory>
 #include "inf_util.hpp"

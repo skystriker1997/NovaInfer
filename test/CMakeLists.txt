@@ -1,5 +1,10 @@
 add_executable(tensor_test tensor_test.cpp)
 target_link_libraries(tensor_test PRIVATE Eigen3::Eigen util Catch2::Catch2WithMain)
+if(MKL_FOUND)
+    target_compile_options(tensor_test PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_COMPILE_OPTIONS>)
+    target_include_directories(tensor_test PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
+    target_link_libraries(tensor_test PUBLIC $<LINK_ONLY:MKL::MKL>)
+endif()
 
 
 add_executable(sigmoid_test sigmoid_test.cpp)
@@ -34,7 +39,5 @@ add_executable(cat_test cat_test.cpp)
 target_link_libraries(cat_test PUBLIC layer Catch2::Catch2WithMain )
 
 
-add_executable(openmp_test openmp_test.cpp)
-target_link_libraries(openmp_test PUBLIC OpenMP::OpenMP_CXX )
 
 
