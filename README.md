@@ -5,12 +5,13 @@
 Written by C++, Novainfer is a deep learning inference framework in development. It is named as "nova" becasue I am a beginner in the filed of deep learning and trying to make progress step by step. My aim is to make it be able to deploy most of models and support CUDA acceleration one day.
 
 ## Development environment and libraries used
-* Ubuntu 22.04.4
+* operating system : Ubuntu 22.04.4
 * C++ standard : C++17
 * model format : [PNNX](https://github.com/Tencent/ncnn/tree/master/tools/pnnx)
 * linear algebra library : [Eigen3](https://eigen.tuxfamily.org/index.php?title=Main_Page)
 * log library : [spdlog](https://github.com/gabime/spdlog)
 * unit test library : [Catch2](https://github.com/catchorg/Catch2)
+* threading : OpenMP
 
 ## Firmware-based accleration 
 
