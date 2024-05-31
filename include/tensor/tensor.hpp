@@ -1,9 +1,14 @@
 #ifndef NOVA_INFER_TENSOR
 #define NOVA_INFER_TENSOR
 
-#ifndef EIGEN_USE_MKL_ALL
-#define EIGEN_USE_MKL_ALL
+#ifndef EIGEN_USE_BLAS
+#define EIGEN_USE_BLAS
 #endif
+
+#ifndef EIGEN_USE_MKL_VML
+#define EIGEN_USE_MKL_VML
+#endif
+
 
 #include <eigen3/Eigen/Eigen>
 #include <vector>
